@@ -1,0 +1,1967 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>物理判据参考（How to Judge）</title>
+<style>
+:root {
+    --bg:#0d1117; --panel:#161b22; --panel-2:#1f2937;
+    --text:#e6edf3; --muted:#8b949e; --link:#58a6ff;
+    --border:#30363d; --accent:#7ee787;
+    --code-bg:#0b0f14;
+}
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:var(--bg); color:var(--text); }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+        "Noto Sans CJK SC", Roboto, Helvetica, Arial, sans-serif;
+    line-height:1.75; font-size:16px;
+}
+.layout { display:flex; max-width:1400px; margin:0 auto; }
+aside.toc {
+    position:sticky; top:0; align-self:flex-start;
+    width:280px; height:100vh; overflow-y:auto;
+    padding:24px 16px; border-right:1px solid var(--border);
+    background:var(--panel); font-size:14px;
+}
+aside.toc h2 { font-size:13px; color:var(--muted); text-transform:uppercase;
+    letter-spacing:1px; margin:0 0 12px; }
+aside.toc ul { list-style:none; padding-left:12px; margin:0; }
+aside.toc > ul { padding-left:0; }
+aside.toc a { color:var(--text); text-decoration:none; display:block;
+    padding:4px 8px; border-radius:6px; }
+aside.toc a:hover { background:var(--panel-2); color:var(--link); }
+main { flex:1; min-width:0; padding:48px 56px; max-width:960px; }
+@media (max-width: 900px) {
+    .layout { flex-direction:column; }
+    aside.toc { position:static; width:100%; height:auto; max-height:none;
+        border-right:none; border-bottom:1px solid var(--border); }
+    main { padding:24px 16px; }
+}
+h1, h2, h3, h4 { color:var(--text); border-bottom:1px solid var(--border);
+    padding-bottom:.3em; margin-top:2em; }
+h1 { font-size:2em; }
+h2 { font-size:1.6em; }
+h3 { font-size:1.3em; border-bottom:none; }
+h4 { font-size:1.1em; border-bottom:none; color:var(--accent); }
+a { color:var(--link); text-decoration:none; }
+a:hover { text-decoration:underline; }
+blockquote { border-left:4px solid var(--accent);
+    background:var(--panel); margin:16px 0; padding:8px 16px;
+    color:var(--muted); border-radius:0 6px 6px 0; }
+blockquote p { margin:.5em 0; }
+table { border-collapse:collapse; width:100%; margin:16px 0;
+    background:var(--panel); border-radius:6px; overflow:hidden; display:block;
+    overflow-x:auto; }
+th, td { border:1px solid var(--border); padding:8px 12px; text-align:left;
+    vertical-align:top; }
+th { background:var(--panel-2); color:var(--accent); font-weight:600; }
+tr:nth-child(even) td { background:#11161d; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas,
+    "Cascadia Code", monospace; font-size:.92em;
+    background:var(--code-bg); padding:2px 6px; border-radius:4px;
+    border:1px solid var(--border); }
+pre { background:var(--code-bg); border:1px solid var(--border);
+    border-radius:8px; padding:16px; overflow-x:auto;
+    font-size:13px; line-height:1.55; }
+pre code { background:transparent; border:none; padding:0; font-size:inherit; }
+hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
+.codehilite { background:var(--code-bg); border:1px solid var(--border);
+    border-radius:8px; margin:16px 0; }
+.codehilite pre { background:transparent; border:none; margin:0; }
+h1, h2, h3, h4 { scroll-margin-top:16px; }
+.brand { padding:12px 56px; background:var(--panel);
+    border-bottom:1px solid var(--border); color:var(--muted);
+    font-size:13px; }
+.brand strong { color:var(--accent); }
+@media (max-width: 900px) { .brand { padding:12px 16px; } }
+pre { line-height: 125%; }
+td.linenos .normal { color: #6e7681; background-color: #0d1117; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #6e7681; background-color: #0d1117; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #6e7681 }
+.codehilite { background: #0d1117; color: #E6EDF3 }
+.codehilite .c { color: #8B949E; font-style: italic } /* Comment */
+.codehilite .err { color: #F85149 } /* Error */
+.codehilite .esc { color: #E6EDF3 } /* Escape */
+.codehilite .g { color: #E6EDF3 } /* Generic */
+.codehilite .k { color: #FF7B72 } /* Keyword */
+.codehilite .l { color: #A5D6FF } /* Literal */
+.codehilite .n { color: #E6EDF3 } /* Name */
+.codehilite .o { color: #FF7B72; font-weight: bold } /* Operator */
+.codehilite .x { color: #E6EDF3 } /* Other */
+.codehilite .p { color: #E6EDF3 } /* Punctuation */
+.codehilite .ch { color: #8B949E; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #8B949E; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #8B949E; font-weight: bold; font-style: italic } /* Comment.Preproc */
+.codehilite .cpf { color: #8B949E; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #8B949E; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #8B949E; font-weight: bold; font-style: italic } /* Comment.Special */
+.codehilite .gd { color: #FFA198; background-color: #490202 } /* Generic.Deleted */
+.codehilite .ge { color: #E6EDF3; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #E6EDF3; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #FFA198 } /* Generic.Error */
+.codehilite .gh { color: #79C0FF; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #56D364; background-color: #0F5323 } /* Generic.Inserted */
+.codehilite .go { color: #8B949E } /* Generic.Output */
+.codehilite .gp { color: #8B949E } /* Generic.Prompt */
+.codehilite .gs { color: #E6EDF3; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #79C0FF } /* Generic.Subheading */
+.codehilite .gt { color: #FF7B72 } /* Generic.Traceback */
+.codehilite .g-Underline { color: #E6EDF3; text-decoration: underline } /* Generic.Underline */
+.codehilite .kc { color: #79C0FF } /* Keyword.Constant */
+.codehilite .kd { color: #FF7B72 } /* Keyword.Declaration */
+.codehilite .kn { color: #FF7B72 } /* Keyword.Namespace */
+.codehilite .kp { color: #79C0FF } /* Keyword.Pseudo */
+.codehilite .kr { color: #FF7B72 } /* Keyword.Reserved */
+.codehilite .kt { color: #FF7B72 } /* Keyword.Type */
+.codehilite .ld { color: #79C0FF } /* Literal.Date */
+.codehilite .m { color: #A5D6FF } /* Literal.Number */
+.codehilite .s { color: #A5D6FF } /* Literal.String */
+.codehilite .na { color: #E6EDF3 } /* Name.Attribute */
+.codehilite .nb { color: #E6EDF3 } /* Name.Builtin */
+.codehilite .nc { color: #F0883E; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #79C0FF; font-weight: bold } /* Name.Constant */
+.codehilite .nd { color: #D2A8FF; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #FFA657 } /* Name.Entity */
+.codehilite .ne { color: #F0883E; font-weight: bold } /* Name.Exception */
+.codehilite .nf { color: #D2A8FF; font-weight: bold } /* Name.Function */
+.codehilite .nl { color: #79C0FF; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #FF7B72 } /* Name.Namespace */
+.codehilite .nx { color: #E6EDF3 } /* Name.Other */
+.codehilite .py { color: #79C0FF } /* Name.Property */
+.codehilite .nt { color: #7EE787 } /* Name.Tag */
+.codehilite .nv { color: #79C0FF } /* Name.Variable */
+.codehilite .ow { color: #FF7B72; font-weight: bold } /* Operator.Word */
+.codehilite .pm { color: #E6EDF3 } /* Punctuation.Marker */
+.codehilite .w { color: #6E7681 } /* Text.Whitespace */
+.codehilite .mb { color: #A5D6FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #A5D6FF } /* Literal.Number.Float */
+.codehilite .mh { color: #A5D6FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #A5D6FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #A5D6FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #79C0FF } /* Literal.String.Affix */
+.codehilite .sb { color: #A5D6FF } /* Literal.String.Backtick */
+.codehilite .sc { color: #A5D6FF } /* Literal.String.Char */
+.codehilite .dl { color: #79C0FF } /* Literal.String.Delimiter */
+.codehilite .sd { color: #A5D6FF } /* Literal.String.Doc */
+.codehilite .s2 { color: #A5D6FF } /* Literal.String.Double */
+.codehilite .se { color: #79C0FF } /* Literal.String.Escape */
+.codehilite .sh { color: #79C0FF } /* Literal.String.Heredoc */
+.codehilite .si { color: #A5D6FF } /* Literal.String.Interpol */
+.codehilite .sx { color: #A5D6FF } /* Literal.String.Other */
+.codehilite .sr { color: #79C0FF } /* Literal.String.Regex */
+.codehilite .s1 { color: #A5D6FF } /* Literal.String.Single */
+.codehilite .ss { color: #A5D6FF } /* Literal.String.Symbol */
+.codehilite .bp { color: #E6EDF3 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #D2A8FF; font-weight: bold } /* Name.Function.Magic */
+.codehilite .vc { color: #79C0FF } /* Name.Variable.Class */
+.codehilite .vg { color: #79C0FF } /* Name.Variable.Global */
+.codehilite .vi { color: #79C0FF } /* Name.Variable.Instance */
+.codehilite .vm { color: #79C0FF } /* Name.Variable.Magic */
+.codehilite .il { color: #A5D6FF } /* Literal.Number.Integer.Long */</style>
+</head>
+<body>
+<div class="brand">📘 <strong>物理判据参考（How to Judge）</strong> · 单页静态文档</div>
+<div class="layout">
+  <aside class="toc">
+    <h2>目录</h2>
+    <ul>
+<li><a href="#目录">目录</a></li>
+<li><a href="#1文档目的与边界">1. 文档目的与边界</a></li>
+<ul>
+<li><a href="#11这份文档回答什么">1.1 这份文档回答什么</a></li>
+<li><a href="#12这份文档不回答什么">1.2 这份文档**不**回答什么</a></li>
+<li><a href="#13受众">1.3 受众</a></li>
+<li><a href="#14Phase2表达式判据已实化v07+">1.4 Phase 2 表达式判据（已实化 v0.7+）</a></li>
+<li><a href="#15三类内容的关系">1.5 三类内容的关系</a></li>
+</ul>
+<li><a href="#2通用约定">2. 通用约定</a></li>
+<ul>
+<li><a href="#21Intent概念">2.1 Intent 概念</a></li>
+<li><a href="#22Intent的元数据schema">2.2 Intent 的元数据 schema</a></li>
+<li><a href="#23置信度等级">2.3 置信度等级</a></li>
+<li><a href="#24阈值的可配置性">2.4 阈值的可配置性</a></li>
+<li><a href="#25状态标记">2.5 状态标记</a></li>
+</ul>
+<li><a href="#3FluidDynamics流体动力学">3. Fluid Dynamics（流体动力学）</a></li>
+<ul>
+<li><a href="#31域简介">3.1 域简介</a></li>
+<li><a href="#32Intent全集">3.2 Intent 全集</a></li>
+<li><a href="#33详细判据">3.3 详细判据</a></li>
+<ul>
+<li><a href="#331issteadystateconverged">3.3.1 is_steady_state_converged</a></li>
+<li><a href="#332machregime">3.3.2 mach_regime</a></li>
+<li><a href="#333massimbalancealarm">3.3.3 mass_imbalance_alarm</a></li>
+</ul>
+<li><a href="#34简略intents">3.4 简略 intents</a></li>
+<ul>
+<li><a href="#hasrecirculationatoutlet">has_recirculation_at_outlet</a></li>
+<li><a href="#hasseparationonwalls">has_separation_on_walls</a></li>
+<li><a href="#yplusresolutionadequate">yplus_resolution_adequate</a></li>
+<li><a href="#pressuredropexcessive">pressure_drop_excessive</a></li>
+<li><a href="#reynoldsnumberestimated">reynolds_number_estimated</a></li>
+</ul>
+<li><a href="#35跨求解器变量映射">3.5 跨求解器变量映射</a></li>
+<li><a href="#36当前Tier5实现状态">3.6 当前 Tier 5 实现状态</a></li>
+</ul>
+<li><a href="#4HeatTransfer传热">4. Heat Transfer（传热）</a></li>
+<ul>
+<li><a href="#41域简介">4.1 域简介</a></li>
+<li><a href="#42Intent全集">4.2 Intent 全集</a></li>
+<li><a href="#43详细判据">4.3 详细判据</a></li>
+<ul>
+<li><a href="#431hasthermalextreme">4.3.1 has_thermal_extreme</a></li>
+<li><a href="#432convectiondominant">4.3.2 convection_dominant</a></li>
+</ul>
+<li><a href="#44简略intents">4.4 简略 intents</a></li>
+<ul>
+<li><a href="#thermalequilibriumreached">thermal_equilibrium_reached</a></li>
+<li><a href="#temperatureuniformityatoutlet">temperature_uniformity_at_outlet</a></li>
+<li><a href="#excessivewallheatflux">excessive_wall_heat_flux</a></li>
+</ul>
+<li><a href="#45跨求解器变量映射">4.5 跨求解器变量映射</a></li>
+</ul>
+<li><a href="#5Combustion燃烧">5. Combustion（燃烧）</a></li>
+<ul>
+<li><a href="#51域简介">5.1 域简介</a></li>
+<li><a href="#52Intent全集">5.2 Intent 全集</a></li>
+<li><a href="#53详细判据">5.3 详细判据</a></li>
+<ul>
+<li><a href="#531isextinguished核心本项目重点示例">5.3.1 is_extinguished（核心，本项目重点示例）</a></li>
+<li><a href="#532isignited">5.3.2 is_ignited</a></li>
+<li><a href="#533completecombustion">5.3.3 complete_combustion</a></li>
+</ul>
+<li><a href="#54简略intents">5.4 简略 intents</a></li>
+<ul>
+<li><a href="#ignitiondelayacceptable">ignition_delay_acceptable</a></li>
+<li><a href="#excessivecoemissions">excessive_co_emissions</a></li>
+<li><a href="#equivalenceratioinflammablerange">equivalence_ratio_in_flammable_range</a></li>
+<li><a href="#sootformationsignificant">soot_formation_significant</a></li>
+</ul>
+<li><a href="#55跨求解器变量映射">5.5 跨求解器变量映射</a></li>
+</ul>
+<li><a href="#6Numerics数值收敛守恒">6. Numerics（数值收敛/守恒）</a></li>
+<ul>
+<li><a href="#61域简介">6.1 域简介</a></li>
+<li><a href="#62Intent全集">6.2 Intent 全集</a></li>
+<li><a href="#63详细判据">6.3 详细判据</a></li>
+<ul>
+<li><a href="#631isdiverged">6.3.1 is_diverged</a></li>
+<li><a href="#632excessivecourant">6.3.2 excessive_courant</a></li>
+<li><a href="#633masscontinuityviolated">6.3.3 mass_continuity_violated</a></li>
+</ul>
+<li><a href="#64简略intents">6.4 简略 intents</a></li>
+<ul>
+<li><a href="#isconverged聚合判据">is_converged (聚合判据)</a></li>
+<li><a href="#naninfield">nan_in_field</a></li>
+<li><a href="#residualoscillating">residual_oscillating</a></li>
+<li><a href="#timestepcollapsed">timestep_collapsed</a></li>
+<li><a href="#excessiveiterationcount">excessive_iteration_count</a></li>
+</ul>
+<li><a href="#65跨求解器变量映射">6.5 跨求解器变量映射</a></li>
+</ul>
+<li><a href="#7Structural结构动力学">7. Structural（结构动力学）</a></li>
+<ul>
+<li><a href="#71域简介">7.1 域简介</a></li>
+<li><a href="#72Intent全集">7.2 Intent 全集</a></li>
+<li><a href="#73详细判据">7.3 详细判据</a></li>
+<ul>
+<li><a href="#731maxstressexceedsyield">7.3.1 max_stress_exceeds_yield</a></li>
+<li><a href="#732modalcollisionwithexcitation">7.3.2 modal_collision_with_excitation</a></li>
+</ul>
+<li><a href="#74简略intents">7.4 简略 intents</a></li>
+<ul>
+<li><a href="#materialfailed">material_failed</a></li>
+<li><a href="#excessivedisplacement">excessive_displacement</a></li>
+<li><a href="#bucklingdetected">buckling_detected</a></li>
+<li><a href="#contactchattering">contact_chattering</a></li>
+<li><a href="#negativejacobian">negative_jacobian</a></li>
+<li><a href="#excessivestrainenergydensity">excessive_strain_energy_density</a></li>
+</ul>
+<li><a href="#75跨求解器变量映射">7.5 跨求解器变量映射</a></li>
+</ul>
+<li><a href="#8Multiphase多相">8. Multiphase（多相）</a></li>
+<li><a href="#9跨域考虑">9. 跨域考虑</a></li>
+<ul>
+<li><a href="#91多物理耦合的判据组合">9.1 多物理耦合的判据组合</a></li>
+<li><a href="#92信号缺失时的降级">9.2 信号缺失时的降级</a></li>
+<li><a href="#93时间维度的判据">9.3 时间维度的判据</a></li>
+</ul>
+<li><a href="#10阈值校准哲学">10. 阈值校准哲学</a></li>
+<ul>
+<li><a href="#101阈值绝不写死">10.1 阈值绝不写死</a></li>
+<li><a href="#102阈值的三层来源">10.2 阈值的三层来源</a></li>
+<li><a href="#103阈值校准流程">10.3 阈值校准流程</a></li>
+<li><a href="#104阈值的局限承认">10.4 阈值的局限承认</a></li>
+</ul>
+<li><a href="#11labeledcases联动">11. labeled_cases 联动</a></li>
+<ul>
+<li><a href="#111labeledcases是判据的真值">11.1 labeled_cases 是判据的真值</a></li>
+<li><a href="#112groundtruthyamlschema">11.2 ground_truth.yaml schema</a></li>
+<li><a href="#113标注成本">11.3 标注成本</a></li>
+<li><a href="#114推荐的最小labeledset">11.4 推荐的最小 labeled set</a></li>
+</ul>
+<li><a href="#12迁移到simknowledge">12. 迁移到 sim-knowledge</a></li>
+<ul>
+<li><a href="#121迁移目标">12.1 迁移目标</a></li>
+<li><a href="#122双载体内容">12.2 双载体内容</a></li>
+<li><a href="#123迁移时机">12.3 迁移时机</a></li>
+<li><a href="#124高优先级迁移项">12.4 高优先级迁移项</a></li>
+</ul>
+<li><a href="#13变更历史">13. 变更历史</a></li>
+</ul>
+</ul>
+  </aside>
+  <main>
+<h1 id="物理判据参考HowtoJudge">物理判据参考（How to Judge）</h1>
+<blockquote>
+<p><strong>状态</strong>：参考文档 v0.1
+<strong>配套文档</strong>：
+- <a href="design.md">design.md</a> —— 高层架构、Tier/Path 定义
+- <a href="extraction_reference.md">extraction_reference.md</a> —— 姊妹文档，"读"轴的实施依据
+<strong>对应三轴</strong>：design.md §2 中<strong>"判"</strong> 这一动作的实施依据
+<strong>目的</strong>：为 <code>sim-knowledge/physics/&lt;domain&gt;/criteria.yaml</code> 提供素材；给 Query Agent <strong>临场推断</strong>兜底用；给 Tier 5 QOI 规则提供需求规格</p>
+</blockquote>
+<hr />
+<h2 id="目录">目录</h2>
+<ol>
+<li><a href="#1-文档目的与边界">文档目的与边界</a></li>
+<li><a href="#2-通用约定">通用约定</a></li>
+<li><a href="#3-fluid-dynamics流体动力学">Fluid Dynamics（流体动力学）</a></li>
+<li><a href="#4-heat-transfer传热">Heat Transfer（传热）</a></li>
+<li><a href="#5-combustion燃烧">Combustion（燃烧）</a></li>
+<li><a href="#6-numerics数值收敛守恒">Numerics（数值收敛/守恒）</a></li>
+<li><a href="#7-structural结构动力学">Structural（结构动力学）</a></li>
+<li><a href="#8-multiphase多相">Multiphase（多相）</a></li>
+<li><a href="#9-跨域考虑">跨域考虑</a></li>
+<li><a href="#10-阈值校准哲学">阈值校准哲学</a></li>
+<li><a href="#11-labeled_cases-联动">labeled_cases 联动</a></li>
+<li><a href="#12-迁移到-sim-knowledge">迁移到 sim-knowledge</a></li>
+<li><a href="#13-变更历史">变更历史</a></li>
+</ol>
+<hr />
+<h2 id="1文档目的与边界">1. 文档目的与边界</h2>
+<h3 id="11这份文档回答什么">1.1 这份文档回答什么</h3>
+<p>每个物理域（流/热/燃/数值/结构）下<strong>可被自动判定的物理状态</strong>有哪些，每个状态用什么信号判、阈值是多少、理论依据是什么。</p>
+<h3 id="12这份文档不回答什么">1.2 这份文档<strong>不</strong>回答什么</h3>
+<ul>
+<li>❌ 怎么<strong>操作</strong>求解器（看 sim-skills）</li>
+<li>❌ 怎么<strong>读</strong>陌生格式（看 extraction_reference.md）</li>
+<li>❌ 哪些字段从哪个文件抓（看 extraction_reference.md）</li>
+<li>❌ Query Agent 的 LLM 调度细节（看 sim-knowledge 自身设计文档，Phase 3+ 实化）</li>
+</ul>
+<h3 id="13受众">1.3 受众</h3>
+<ul>
+<li>sim-parse Tier 5 QOI 规则的实现者（写 <code>core/canonical/qoi_rules/*.yaml</code> 的人）</li>
+<li>sim-knowledge/physics 内容贡献者</li>
+<li>Query Agent 的设计者（理解可判物理状态的全集）</li>
+<li>想了解"sim-parse 能自动告诉我哪些物理判断"的工程师</li>
+</ul>
+<h3 id="14Phase2表达式判据已实化v07+">1.4 Phase 2 表达式判据（已实化 v0.7+）</h3>
+<p>✅ 已实现：YAML 判据可以用<strong>算术表达式</strong>组合多个信号。</p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">low_temperature_excess</span>
+<span class="w">  </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;T_max</span><span class="nv"> </span><span class="s">-</span><span class="nv"> </span><span class="s">T_inlet&quot;</span><span class="w">      </span><span class="c1"># 真物理判据</span>
+<span class="w">  </span><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">T_max</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">{</span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tier_4.variable_ranges.T.max&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">T_inlet</span><span class="p">:</span><span class="w">  </span><span class="p p-Indicator">{</span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tier_3.bc.T_inlet&quot;</span><span class="p p-Indicator">,</span><span class="nt"> fallback</span><span class="p">:</span><span class="w"> </span><span class="nv">300.0</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">op</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;&quot;</span>
+<span class="w">  </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100.0</span>
+</code></pre></div>
+
+<p>支持：
+- 数值字面量 (int/float)
+- 命名变量（从 tier 路径取）+ fallback 默认值
+- 二元运算: <code>+ - * / // % **</code>
+- 一元运算: <code>+ -</code>
+- 白名单函数: <code>abs</code>, <code>min</code>, <code>max</code>, <code>sum</code>, <code>sqrt</code>, <code>pow</code>, <code>log</code>, <code>log10</code>, <code>log2</code>, <code>exp</code></p>
+<p><strong>禁止</strong>：属性访问、subscript、import、lambda、自定义函数 —— 沙盒限制由 <code>core/canonical/safe_eval.py</code> 强制。</p>
+<p>这一升级让 <code>is_extinguished</code> 等判据使用真实物理公式（<code>T_max - T_inlet &lt; 100K</code>）而不是 Phase 1 的绝对阈值妥协（<code>T.max &lt; 400K</code>）。</p>
+<hr />
+<h3 id="15三类内容的关系">1.5 三类内容的关系</h3>
+<div class="codehilite"><pre><span></span><code>extraction_reference.md   ──提取信号──►  Tier 4 输出
+                                               │
+                                               ▼
+                                  ┌───────────────────────┐
+                                  │  本文档 criteria.md    │
+                                  │  规定信号如何组合判定  │
+                                  │  (规则 + 阈值 + 文献)  │
+                                  └───────┬───────────────┘
+                                          │
+                              ┌───────────┴───────────┐
+                              ▼                       ▼
+                   sim-parse Tier 5 QOI         Query Agent 临场推断
+                   (固化规则 YAML)               (检索+套用本文档)
+</code></pre></div>
+
+<hr />
+<h2 id="2通用约定">2. 通用约定</h2>
+<h3 id="21Intent概念">2.1 Intent 概念</h3>
+<p><strong>Intent</strong> = "用户/系统想知道的物理判断"，是判据的最小单元。</p>
+<table>
+<thead>
+<tr>
+<th>形式</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>布尔 (boolean)</td>
+<td><code>is_extinguished</code>, <code>is_converged</code></td>
+</tr>
+<tr>
+<td>枚举 (categorical)</td>
+<td><code>flow_regime</code> ∈ {subsonic, transonic, supersonic, hypersonic}</td>
+</tr>
+<tr>
+<td>标量带阈值告警 (scalar+alarm)</td>
+<td><code>courant_max</code> + <code>courant_excessive_alarm</code></td>
+</tr>
+<tr>
+<td>等级 (grade)</td>
+<td><code>convergence_grade</code> ∈ {A, B, C, F}</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22Intent的元数据schema">2.2 Intent 的元数据 schema</h3>
+<p>每个 intent 应该被这样描述（YAML 化后是 sim-knowledge/physics/<domain>/criteria.yaml 的条目）：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">&lt;intent_id&gt;</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">中文说明</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean | enum | scalar | grade</span>
+<span class="w">  </span><span class="nt">applicable_when</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">必要前提条件 (例如 has_combustion_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true)</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">signal_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">引用 extraction_reference.md 中的信号名</span>
+<span class="w">      </span><span class="nt">tier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">voting | threshold | regex | computed</span>
+<span class="w">    </span><span class="nt">detail</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">    </span><span class="nt">by_condition</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">fuel</span><span class="p">:</span><span class="w"> </span><span class="nv">CH4</span><span class="p p-Indicator">,</span><span class="nt"> pressure_atm</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">]}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">文献引用</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH | MED | LOW</span>
+<span class="w">  </span><span class="nt">validation_cases</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">labeled_cases/.../case_id_001</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">已知不适用情况</span>
+</code></pre></div>
+
+<h3 id="23置信度等级">2.3 置信度等级</h3>
+<p>Agent / Tier 5 输出时给每个 intent 标置信度：</p>
+<table>
+<thead>
+<tr>
+<th>等级</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HIGH</strong></td>
+<td>判据强（多信号一致、有文献支持、已校准过）</td>
+</tr>
+<tr>
+<td><strong>MED</strong></td>
+<td>判据中等（单信号、有文献，未充分校准）</td>
+</tr>
+<tr>
+<td><strong>LOW</strong></td>
+<td>判据弱（启发式推断，无校准）</td>
+</tr>
+<tr>
+<td><strong>PENDING</strong></td>
+<td>信号缺失，无法判定</td>
+</tr>
+</tbody>
+</table>
+<h3 id="24阈值的可配置性">2.4 阈值的可配置性</h3>
+<p>阈值<strong>绝不写死在代码里</strong>。每个 intent 的 thresholds 应该：
+- 提供 <code>default</code>（保守值）
+- 按 <code>by_condition</code> 分组（不同燃料/压力/尺度有不同阈值）
+- 用户可以在 case-level 通过 <code>overrides.yaml</code> 覆盖</p>
+<h3 id="25状态标记">2.5 状态标记</h3>
+<table>
+<thead>
+<tr>
+<th>标记</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>✅</td>
+<td>判据规则清晰、有理论支持、可直接实现</td>
+</tr>
+<tr>
+<td>⚠️</td>
+<td>判据存在但有歧义 / 阈值需校准</td>
+</tr>
+<tr>
+<td>🔬</td>
+<td>仅理论框架，需更多 labeled cases 才能定阈值</td>
+</tr>
+<tr>
+<td>❌</td>
+<td>暂不定义（超出当前范围）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3FluidDynamics流体动力学">3. Fluid Dynamics（流体动力学）</h2>
+<h3 id="31域简介">3.1 域简介</h3>
+<p><strong>适用</strong>：CFD 流场算例（不可压 / 可压 / 多相中的连续相）、稳态或瞬态。<br />
+<strong>典型求解器</strong>：simpleFoam / pisoFoam / pimpleFoam / rhoSimpleFoam（OpenFOAM）、Fluent、CFX、SU2、STAR-CCM+。</p>
+<h3 id="32Intent全集">3.2 Intent 全集</h3>
+<table>
+<thead>
+<tr>
+<th>Intent ID</th>
+<th>输出类型</th>
+<th>描述</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>is_steady_state_converged</code></td>
+<td>boolean</td>
+<td>稳态算例是否收敛</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>mach_regime</code></td>
+<td>enum</td>
+<td>流动速度区间（亚音速/跨音速/超音速/高超音速）</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>has_recirculation_at_outlet</code></td>
+<td>boolean</td>
+<td>出口存在回流（可能数值不稳）</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>has_separation_on_walls</code></td>
+<td>boolean</td>
+<td>壁面流动分离</td>
+<td>🔬</td>
+</tr>
+<tr>
+<td><code>mass_imbalance_alarm</code></td>
+<td>boolean</td>
+<td>进出口质量不守恒超阈值</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>yplus_resolution_adequate</code></td>
+<td>boolean</td>
+<td>边界层 y+ 满足模型要求</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>pressure_drop_excessive</code></td>
+<td>boolean</td>
+<td>压损异常大（数值发散前兆）</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>reynolds_number_estimated</code></td>
+<td>scalar</td>
+<td>估算雷诺数</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h3 id="33详细判据">3.3 详细判据</h3>
+<h4 id="331issteadystateconverged">3.3.1 <code>is_steady_state_converged</code></h4>
+<p><strong>一句话</strong>：稳态算例的所有控制方程残差下降到允许的阶数以下并稳定。</p>
+<p><strong>依赖信号</strong>（Tier 4）：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>extraction 来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>residual_history.&lt;var&gt;</code> (per equation)</td>
+<td>extraction §3.3.E "残差历史"</td>
+</tr>
+<tr>
+<td><code>convergence_orders.&lt;var&gt;</code></td>
+<td>extraction §3.3.E</td>
+</tr>
+<tr>
+<td>解算器配置中的 <code>convergence_tolerance</code></td>
+<td>extraction §3.3.C</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>（YAML 形式）：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">is_steady_state_converged</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;稳态算例收敛&quot;</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">applicable_when</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">time_formulation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">steady</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">residual_history (per equation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">U/p/k/epsilon/omega/h)</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">convergence_tolerance (from controlDict / fvSolution)</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">voting</span>
+<span class="w">    </span><span class="nt">voting_threshold</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;all&quot;</span>
+<span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">signal</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;convergence_orders.U&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&gt;=</span><span class="nv"> </span><span class="s">3&quot;</span><span class="w">        </span><span class="c1"># 至少下降 3 个数量级</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">signal</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;convergence_orders.p&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&gt;=</span><span class="nv"> </span><span class="s">3&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">signal</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;convergence_orders.continuity&quot;</span><span class="w">  </span><span class="c1"># 连续性方程</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&gt;=</span><span class="nv"> </span><span class="s">4&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">signal</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;residual_history.&lt;var&gt;.last_50_iterations.std&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;</span><span class="nv"> </span><span class="s">0.1</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">residual_history.&lt;var&gt;.last&quot;</span><span class="w">  </span><span class="c1"># 残差稳定不振荡</span>
+<span class="w">        </span><span class="nt">all_vars</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">orders</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> stability_factor</span><span class="p">:</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">by_condition</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">turbulence_model</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;LES&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;DES&quot;</span><span class="p p-Indicator">]}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">orders</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">}</span><span class="w">        </span><span class="c1"># LES/DES 残差不会下降很多</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Patankar</span><span class="nv"> </span><span class="s">1980</span><span class="nv"> </span><span class="s">§6.4;</span><span class="nv"> </span><span class="s">Versteeg</span><span class="nv"> </span><span class="s">&amp;</span><span class="nv"> </span><span class="s">Malalasekera</span><span class="nv"> </span><span class="s">2007</span><span class="nv"> </span><span class="s">§11&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LES</span><span class="nv"> </span><span class="s">/</span><span class="nv"> </span><span class="s">DES</span><span class="nv"> </span><span class="s">残差判据放宽，更应该看物理量统计稳定性&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;瞬态算例不适用（用</span><span class="nv"> </span><span class="s">is_pseudo_time_converged</span><span class="nv"> </span><span class="s">代替）&quot;</span>
+</code></pre></div>
+
+<h4 id="332machregime">3.3.2 <code>mach_regime</code></h4>
+<p><strong>一句话</strong>：根据流场最大马赫数划分流动速度区间。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>extraction 来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Ma_max</code> (or computed from <code>U_max</code> and <code>T_max</code>)</td>
+<td>extraction §3.3.B 变量统计</td>
+</tr>
+<tr>
+<td><code>gamma</code>, <code>R_gas</code>（来自 thermophysics）</td>
+<td>extraction §3.3.C</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">mach_regime</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">enum</span>
+<span class="w">  </span><span class="nt">enum_values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;incompressible&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;subsonic&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;transonic&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;supersonic&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;hypersonic&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ma_max (direct or computed)</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">enum_threshold</span>
+<span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Ma_max</span><span class="nv"> </span><span class="s">&lt;</span><span class="nv"> </span><span class="s">0.3&quot;</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">incompressible</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0.3</span><span class="nv"> </span><span class="s">&lt;=</span><span class="nv"> </span><span class="s">Ma_max</span><span class="nv"> </span><span class="s">&lt;</span><span class="nv"> </span><span class="s">0.8&quot;</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subsonic</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0.8</span><span class="nv"> </span><span class="s">&lt;=</span><span class="nv"> </span><span class="s">Ma_max</span><span class="nv"> </span><span class="s">&lt;</span><span class="nv"> </span><span class="s">1.2&quot;</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transonic</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.2</span><span class="nv"> </span><span class="s">&lt;=</span><span class="nv"> </span><span class="s">Ma_max</span><span class="nv"> </span><span class="s">&lt;</span><span class="nv"> </span><span class="s">5&quot;</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supersonic</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Ma_max</span><span class="nv"> </span><span class="s">&gt;=</span><span class="nv"> </span><span class="s">5&quot;</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hypersonic</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Anderson</span><span class="nv"> </span><span class="s">2001</span><span class="nv"> </span><span class="s">Modern</span><span class="nv"> </span><span class="s">Compressible</span><span class="nv"> </span><span class="s">Flow&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;仅看最大马赫数，局部区域可能有不同</span><span class="nv"> </span><span class="s">regime&quot;</span>
+</code></pre></div>
+
+<h4 id="333massimbalancealarm">3.3.3 <code>mass_imbalance_alarm</code></h4>
+<p><strong>一句话</strong>：进出口质量流不守恒超过容许误差。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>extraction 来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mass_flow_in</code> (sum over all inlets)</td>
+<td>extraction §14.1 受控变量</td>
+</tr>
+<tr>
+<td><code>mass_flow_out</code> (sum over all outlets)</td>
+<td>同上</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">mass_imbalance_alarm</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mass_flow_in</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mass_flow_out</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threshold</span>
+<span class="w">    </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;abs(mass_flow_in</span><span class="nv"> </span><span class="s">-</span><span class="nv"> </span><span class="s">mass_flow_out)</span><span class="nv"> </span><span class="s">/</span><span class="nv"> </span><span class="s">abs(mass_flow_in)</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">tolerance&quot;</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.01</span><span class="w">    </span><span class="c1"># 1% 误差容忍</span>
+<span class="w">    </span><span class="nt">by_condition</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">has_porous_zone</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span><span class="w">    </span><span class="c1"># 多孔区有数值损失，放宽</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;数值守恒基本要求；连续性方程残差判据的等价表达&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+</code></pre></div>
+
+<h3 id="34简略intents">3.4 简略 intents</h3>
+<h4 id="hasrecirculationatoutlet"><code>has_recirculation_at_outlet</code></h4>
+<ul>
+<li>信号：outlet patch 上速度场法向分量有负值（或 reverse_flow_count &gt; 0）</li>
+<li>阈值：reverse_flow 比例 &gt; 5%（默认）</li>
+<li>限制：partial outlet 不一定是问题，需结合压力边界判断</li>
+</ul>
+<h4 id="hasseparationonwalls"><code>has_separation_on_walls</code></h4>
+<ul>
+<li>信号：wall_shear_stress 在某 patch 上反向 / 接近 0</li>
+<li>限制：需要场积分，不是单值；高级判据要 skin friction coefficient</li>
+<li>状态：🔬（需专门提取 wall_shear 时序）</li>
+</ul>
+<h4 id="yplusresolutionadequate"><code>yplus_resolution_adequate</code></h4>
+<ul>
+<li>信号：y+ 第一层网格值（per wall patch）</li>
+<li>阈值：取决于湍流模型</li>
+<li>kEpsilon (wall function): 30 &lt; y+ &lt; 300</li>
+<li>kOmegaSST (low-Re): y+ &lt; 1</li>
+<li>LES: y+ &lt; 1</li>
+<li>引用：Pope 2000 <em>Turbulent Flows</em> §11</li>
+</ul>
+<h4 id="pressuredropexcessive"><code>pressure_drop_excessive</code></h4>
+<ul>
+<li>阈值：依案例，需 case-specific 校准</li>
+</ul>
+<h4 id="reynoldsnumberestimated"><code>reynolds_number_estimated</code></h4>
+<ul>
+<li>信号：U_inlet, characteristic_length, kinematic_viscosity</li>
+<li>公式：Re = U * L / ν</li>
+<li>限制：characteristic_length 需要用户提供或 from bbox</li>
+</ul>
+<h3 id="35跨求解器变量映射">3.5 跨求解器变量映射</h3>
+<p>参见 <a href="extraction_reference.md#141-流体动力学">extraction_reference.md §14.1</a>。</p>
+<h3 id="36当前Tier5实现状态">3.6 当前 Tier 5 实现状态</h3>
+<p>Phase 1：仅 <code>is_steady_state_converged</code> + <code>mach_regime</code> 实化<br />
+Phase 2：补 <code>mass_imbalance_alarm</code> + <code>yplus_resolution_adequate</code><br />
+Phase 3+：其他</p>
+<hr />
+<h2 id="4HeatTransfer传热">4. Heat Transfer（传热）</h2>
+<h3 id="41域简介">4.1 域简介</h3>
+<p><strong>适用</strong>：含热场的 CFD（共轭传热 cht / 热对流 / 辐射）、纯固体导热、热-结构耦合。<br />
+<strong>典型求解器</strong>：chtMultiRegionFoam / buoyantSimpleFoam / Fluent thermal / Abaqus heat transfer。</p>
+<h3 id="42Intent全集">4.2 Intent 全集</h3>
+<table>
+<thead>
+<tr>
+<th>Intent ID</th>
+<th>输出类型</th>
+<th>描述</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>has_thermal_extreme</code></td>
+<td>boolean</td>
+<td>出现非物理高温（材料超极限）</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>convection_dominant</code></td>
+<td>boolean</td>
+<td>流动以对流为主（vs 导热）</td>
+<td>⚠️（按 Pe 数）</td>
+</tr>
+<tr>
+<td><code>thermal_equilibrium_reached</code></td>
+<td>boolean</td>
+<td>多区耦合达到热平衡</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>excessive_wall_heat_flux</code></td>
+<td>boolean</td>
+<td>壁面热流超工程容许</td>
+<td>🔬</td>
+</tr>
+<tr>
+<td><code>temperature_uniformity_at_outlet</code></td>
+<td>grade</td>
+<td>出口温度均匀性等级</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>peclet_number_estimated</code></td>
+<td>scalar</td>
+<td>估算 Peclet 数</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43详细判据">4.3 详细判据</h3>
+<h4 id="431hasthermalextreme">4.3.1 <code>has_thermal_extreme</code></h4>
+<p><strong>一句话</strong>：温度场最大值超过材料的物理或工程上限。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>extraction 来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>T.max</code></td>
+<td>extraction §3.3.B 变量统计</td>
+</tr>
+<tr>
+<td><code>T_inlet</code>, <code>T_ambient</code>（如适用）</td>
+<td>extraction §3.3.C BC</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">has_thermal_extreme</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T.max</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T.min</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threshold</span>
+<span class="w">    </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;T.max</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">T_max_acceptable</span><span class="nv"> </span><span class="s">OR</span><span class="nv"> </span><span class="s">T.min</span><span class="nv"> </span><span class="s">&lt;</span><span class="nv"> </span><span class="s">T_min_acceptable&quot;</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">T_max_acceptable</span><span class="p">:</span><span class="w"> </span><span class="nv">3000</span><span class="p p-Indicator">,</span><span class="nt"> T_min_acceptable</span><span class="p">:</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">}</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">    </span><span class="nt">by_condition</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">fuel</span><span class="p">:</span><span class="w"> </span><span class="nv">CH4</span><span class="p p-Indicator">,</span><span class="nt"> combustion</span><span class="p">:</span><span class="w"> </span><span class="nv">enabled</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">T_max_acceptable</span><span class="p">:</span><span class="w"> </span><span class="nv">2500</span><span class="p p-Indicator">}</span><span class="w">      </span><span class="c1"># 甲烷-空气理论火焰温度 ~2200K，3000+ 异常</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">fuel</span><span class="p">:</span><span class="w"> </span><span class="nv">H2</span><span class="p p-Indicator">,</span><span class="nt"> combustion</span><span class="p">:</span><span class="w"> </span><span class="nv">enabled</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">T_max_acceptable</span><span class="p">:</span><span class="w"> </span><span class="nv">2700</span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">has_solid_region</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="nt"> material</span><span class="p">:</span><span class="w"> </span><span class="nv">steel</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">T_max_acceptable</span><span class="p">:</span><span class="w"> </span><span class="nv">1800</span><span class="p p-Indicator">}</span><span class="w">      </span><span class="c1"># 钢熔点</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;化学反应理论火焰温度</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">工程材料极限&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MED</span><span class="w">   </span><span class="c1"># 需 case-specific 阈值</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;理论火焰温度因当量比变化，1500-2500K</span><span class="nv"> </span><span class="s">范围内&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;材料极限因案例不同，应用户提供&quot;</span>
+</code></pre></div>
+
+<h4 id="432convectiondominant">4.3.2 <code>convection_dominant</code></h4>
+<p><strong>一句话</strong>：通过 Peclet 数判断对流相对导热的主导性。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>velocity_characteristic</code> (U_inlet 或域平均)</td>
+<td>extraction §3.3.C BC + B 变量</td>
+</tr>
+<tr>
+<td><code>length_characteristic</code> (用户提供 or bbox)</td>
+<td>extraction §3.3.A bbox</td>
+</tr>
+<tr>
+<td><code>thermal_diffusivity</code> α = k / (ρ Cp)</td>
+<td>extraction §3.3.C thermophysics</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">convection_dominant</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">velocity_characteristic</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">length_characteristic</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">thermal_diffusivity</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threshold</span>
+<span class="w">    </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Pe</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">(U</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">L)</span><span class="nv"> </span><span class="s">/</span><span class="nv"> </span><span class="s">alpha&quot;</span>
+<span class="w">    </span><span class="nt">boolean_threshold</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Pe</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">1&quot;</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">Pe_threshold</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bejan</span><span class="nv"> </span><span class="s">2013</span><span class="nv"> </span><span class="s">*Convection</span><span class="nv"> </span><span class="s">Heat</span><span class="nv"> </span><span class="s">Transfer*</span><span class="nv"> </span><span class="s">§1&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;characteristic</span><span class="nv"> </span><span class="s">length</span><span class="nv"> </span><span class="s">/</span><span class="nv"> </span><span class="s">velocity</span><span class="nv"> </span><span class="s">选择有主观性&quot;</span>
+</code></pre></div>
+
+<h3 id="44简略intents">4.4 简略 intents</h3>
+<h4 id="thermalequilibriumreached"><code>thermal_equilibrium_reached</code></h4>
+<ul>
+<li>信号：多 region 间界面温度差时序 → 收敛</li>
+<li>阈值：界面温差 &lt; 1K 持续 N 步</li>
+</ul>
+<h4 id="temperatureuniformityatoutlet"><code>temperature_uniformity_at_outlet</code></h4>
+<ul>
+<li>信号：outlet patch 上 T 的方差 / 平均值</li>
+<li>grade：A (变异系数 &lt; 5%) / B (5-15%) / C (15-30%) / F (&gt;30%)</li>
+</ul>
+<h4 id="excessivewallheatflux"><code>excessive_wall_heat_flux</code></h4>
+<ul>
+<li>信号：wall_heat_flux 时序最大值</li>
+<li>阈值：与材料极限相关，需 case-specific</li>
+</ul>
+<h3 id="45跨求解器变量映射">4.5 跨求解器变量映射</h3>
+<p>参见 <a href="extraction_reference.md#142-热">extraction_reference.md §14.2</a>。</p>
+<hr />
+<h2 id="5Combustion燃烧">5. Combustion（燃烧）</h2>
+<h3 id="51域简介">5.1 域简介</h3>
+<p><strong>适用</strong>：所有燃烧算例 —— 预混 / 扩散 / 部分预混；气相 / 液相喷雾 / 颗粒。<br />
+<strong>典型求解器</strong>：reactingFoam / sprayFoam / fireFoam（OpenFOAM）、Fluent species / Cantera。<br />
+<strong>关键文献</strong>：Poinsot &amp; Veynante 2005 <em>Theoretical and Numerical Combustion</em>；Williams 1985 <em>Combustion Theory</em>；Peters 2000 <em>Turbulent Combustion</em>。</p>
+<h3 id="52Intent全集">5.2 Intent 全集</h3>
+<table>
+<thead>
+<tr>
+<th>Intent ID</th>
+<th>输出类型</th>
+<th>描述</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>is_extinguished</code></td>
+<td>boolean</td>
+<td>火焰熄灭</td>
+<td>✅ 重点</td>
+</tr>
+<tr>
+<td><code>is_ignited</code></td>
+<td>boolean</td>
+<td>点火成功</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>ignition_delay_acceptable</code></td>
+<td>boolean</td>
+<td>点火延迟在容许范围</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>excessive_co_emissions</code></td>
+<td>boolean</td>
+<td>CO 排放超标</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>complete_combustion</code></td>
+<td>boolean</td>
+<td>燃料燃尽</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>flame_unsteady</code></td>
+<td>boolean</td>
+<td>火焰位置/强度振荡</td>
+<td>🔬</td>
+</tr>
+<tr>
+<td><code>equivalence_ratio_in_flammable_range</code></td>
+<td>boolean</td>
+<td>当量比在可燃范围</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>soot_formation_significant</code></td>
+<td>boolean</td>
+<td>显著结碳</td>
+<td>🔬</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53详细判据">5.3 详细判据</h3>
+<h4 id="531isextinguished核心本项目重点示例">5.3.1 <code>is_extinguished</code>（核心，本项目重点示例）</h4>
+<p><strong>一句话</strong>：火焰熄灭 —— 反应停止，温度回落，无自由基。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>extraction 来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Qdot.max_over_time</code></td>
+<td>extraction §11.2 燃烧场景信号</td>
+</tr>
+<tr>
+<td><code>T.max_over_time</code></td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>T_inlet</code></td>
+<td>extraction §3.3.C BC</td>
+</tr>
+<tr>
+<td><code>OH.max_over_time</code></td>
+<td>extraction §3.3.B variables</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">is_extinguished</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;火焰熄灭判定&quot;</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">applicable_when</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">has_combustion_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">has_chemistry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">primary</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Qdot.last.max</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T.last.max</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_inlet</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OH.last.max (如可用)</span>
+<span class="w">    </span><span class="nt">secondary</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Qdot.peak.max</span><span class="w">  </span><span class="c1"># 用于趋势判据</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">voting</span>
+<span class="w">    </span><span class="nt">voting_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w">          </span><span class="c1"># 至少 2 条满足</span>
+<span class="w">    </span><span class="nt">criteria</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">low_heat_release</span>
+<span class="w">        </span><span class="nt">signal</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Qdot.last.max&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;</span><span class="nv"> </span><span class="s">threshold_qdot&quot;</span>
+<span class="w">        </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">low_temperature_excess</span>
+<span class="w">        </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;T.last.max</span><span class="nv"> </span><span class="s">-</span><span class="nv"> </span><span class="s">T_inlet&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;</span><span class="nv"> </span><span class="s">threshold_T_excess&quot;</span>
+<span class="w">        </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no_oh_radical</span>
+<span class="w">        </span><span class="nt">signal</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;OH.last.max&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;</span><span class="nv"> </span><span class="s">threshold_OH&quot;</span>
+<span class="w">        </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">        </span><span class="nt">applicable_when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;OH</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">available_variables&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heat_release_collapse</span>
+<span class="w">        </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Qdot.last.max</span><span class="nv"> </span><span class="s">/</span><span class="nv"> </span><span class="s">Qdot.peak.max&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;</span><span class="nv"> </span><span class="s">0.05&quot;</span>
+<span class="w">        </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.5</span><span class="w">             </span><span class="c1"># 趋势判据权重高</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">threshold_qdot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0e6</span><span class="w">        </span><span class="c1"># W/m^3</span>
+<span class="w">      </span><span class="nt">threshold_T_excess</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span><span class="w">      </span><span class="c1"># K</span>
+<span class="w">      </span><span class="nt">threshold_OH</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0e-6</span><span class="w">         </span><span class="c1"># mass fraction</span>
+<span class="w">    </span><span class="nt">by_condition</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">fuel</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CH4&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;methane&quot;</span><span class="p p-Indicator">],</span><span class="nt"> pressure_atm_range</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">]}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">threshold_qdot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0e6</span>
+<span class="w">          </span><span class="nt">threshold_T_excess</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">fuel</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;H2&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;hydrogen&quot;</span><span class="p p-Indicator">]}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">threshold_qdot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0e6</span><span class="w">     </span><span class="c1"># H2 火焰更剧烈</span>
+<span class="w">          </span><span class="nt">threshold_T_excess</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">150</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">fuel</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;kerosene&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;C12H23&quot;</span><span class="p p-Indicator">],</span><span class="nt"> pressure_atm_range</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">50</span><span class="p p-Indicator">]}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">threshold_qdot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0e7</span><span class="w">    </span><span class="c1"># 高压 kerosene 火焰能量密度高</span>
+<span class="w">          </span><span class="nt">threshold_T_excess</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">200</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Williams</span><span class="nv"> </span><span class="s">1985</span><span class="nv"> </span><span class="s">*Combustion</span><span class="nv"> </span><span class="s">Theory*</span><span class="nv"> </span><span class="s">Ch.5</span><span class="nv"> </span><span class="s">(临界拉伸率)&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Peters</span><span class="nv"> </span><span class="s">2000</span><span class="nv"> </span><span class="s">*Turbulent</span><span class="nv"> </span><span class="s">Combustion*</span><span class="nv"> </span><span class="s">§2.4</span><span class="nv"> </span><span class="s">(Karlovitz</span><span class="nv"> </span><span class="s">数)&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Poinsot</span><span class="nv"> </span><span class="s">&amp;</span><span class="nv"> </span><span class="s">Veynante</span><span class="nv"> </span><span class="s">2005</span><span class="nv"> </span><span class="s">*Theoretical</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">Numerical</span><span class="nv"> </span><span class="s">Combustion*</span><span class="nv"> </span><span class="s">Ch.5&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;OpenFOAM</span><span class="nv"> </span><span class="s">tutorial</span><span class="nv"> </span><span class="s">flameletFoam</span><span class="nv"> </span><span class="s">(工程经验阈值)&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">  </span><span class="nt">validation_cases</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">labeled_cases/combustion_extinction/CH4_jet_normal/</span><span class="w">    </span><span class="c1"># 期望 false</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">labeled_cases/combustion_extinction/CH4_jet_blowout/</span><span class="w">   </span><span class="c1"># 期望 true</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">labeled_cases/combustion_extinction/DLR_A_LTS_normal/</span><span class="w">  </span><span class="c1"># 期望 false</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;间歇性熄火（pulsation）只看最后时间步会误判，应配合</span><span class="nv"> </span><span class="s">last_N_steps</span><span class="nv"> </span><span class="s">趋势&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;OH</span><span class="nv"> </span><span class="s">在简化机理（如</span><span class="nv"> </span><span class="s">1-step</span><span class="nv"> </span><span class="s">CH4-air）中不存在；需要详细机理才有&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;对</span><span class="nv"> </span><span class="s">LES</span><span class="nv"> </span><span class="s">算例，瞬时熄火可能正常；要看时间平均&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;小尺度纯化学反应（reactor</span><span class="nv"> </span><span class="s">算例）不适用</span><span class="nv"> </span><span class="s">——</span><span class="nv"> </span><span class="s">Qdot</span><span class="nv"> </span><span class="s">阈值需要重设&quot;</span>
+</code></pre></div>
+
+<h4 id="532isignited">5.3.2 <code>is_ignited</code></h4>
+<p><strong>一句话</strong>：从初始条件（无火）成功点燃形成自维持火焰。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>T.max_over_time</code> （时间序列）</td>
+<td>extraction §3.3.B</td>
+</tr>
+<tr>
+<td><code>Qdot.max_over_time</code></td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>T_inlet</code></td>
+<td>BC</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">is_ignited</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">applicable_when</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">has_combustion_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">initial_condition_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cold&quot;</span><span class="w">  </span><span class="c1"># 即 0/T 不含点火源</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T.max_time_series</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Qdot.max_time_series</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">voting</span>
+<span class="w">    </span><span class="nt">voting_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">criteria</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">temperature_rose</span>
+<span class="w">        </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;max(T.time_series)</span><span class="nv"> </span><span class="s">-</span><span class="nv"> </span><span class="s">T_inlet</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">T_rise_threshold&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heat_release_started</span>
+<span class="w">        </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;max(Qdot.time_series)</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">Qdot_threshold&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heat_release_sustained</span>
+<span class="w">        </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Qdot.last_50pct_steps.mean</span><span class="nv"> </span><span class="s">/</span><span class="nv"> </span><span class="s">Qdot.peak</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">sustain_ratio&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">T_rise_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500</span><span class="w">          </span><span class="c1"># K</span>
+<span class="w">      </span><span class="nt">Qdot_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0e6</span>
+<span class="w">      </span><span class="nt">sustain_ratio</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span><span class="w">             </span><span class="c1"># 末段保持峰值的 30% 以上</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Westbrook</span><span class="nv"> </span><span class="s">2000</span><span class="nv"> </span><span class="s">*Combustion</span><span class="nv"> </span><span class="s">Modeling*</span><span class="nv"> </span><span class="s">Ch.9&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;已有点火源的</span><span class="nv"> </span><span class="s">case</span><span class="nv"> </span><span class="s">应该用</span><span class="nv"> </span><span class="s">is_extinguished</span><span class="nv"> </span><span class="s">反推（看是否后续维持）&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Pulsating</span><span class="nv"> </span><span class="s">ignition</span><span class="nv"> </span><span class="s">/</span><span class="nv"> </span><span class="s">re-ignition</span><span class="nv"> </span><span class="s">可能误判&quot;</span>
+</code></pre></div>
+
+<h4 id="533completecombustion">5.3.3 <code>complete_combustion</code></h4>
+<p><strong>一句话</strong>：燃料在出口/域内被燃尽（残余 &lt; 阈值）。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Y_&lt;fuel&gt;.outlet.mean</code></td>
+<td>extraction §14.1 mean_outlet 类</td>
+</tr>
+<tr>
+<td><code>Y_&lt;fuel&gt;.inlet</code></td>
+<td>BC</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">complete_combustion</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Y_&lt;fuel_species&gt;_outlet_mean</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Y_&lt;fuel_species&gt;_inlet</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threshold</span>
+<span class="w">    </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Y_&lt;fuel&gt;_outlet</span><span class="nv"> </span><span class="s">/</span><span class="nv"> </span><span class="s">Y_&lt;fuel&gt;_inlet</span><span class="nv"> </span><span class="s">&lt;</span><span class="nv"> </span><span class="s">unburnt_ratio_threshold&quot;</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.01</span><span class="w">             </span><span class="c1"># 出口残余 &lt; 1% 入口浓度</span>
+<span class="w">    </span><span class="nt">by_condition</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">regime</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fuel_lean&quot;</span><span class="p p-Indicator">,</span><span class="nt"> equivalence_ratio</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.9</span><span class="p p-Indicator">]}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.005</span><span class="w">             </span><span class="c1"># 贫燃工况要求更严</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">regime</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fuel_rich&quot;</span><span class="p p-Indicator">,</span><span class="nt"> equivalence_ratio</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1.1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2.0</span><span class="p p-Indicator">]}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span><span class="w">              </span><span class="c1"># 富燃工况允许更多残余</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;化学动力学基本概念&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;需要识别主燃料（CH4</span><span class="nv"> </span><span class="s">vs</span><span class="nv"> </span><span class="s">C12H23</span><span class="nv"> </span><span class="s">vs</span><span class="nv"> </span><span class="s">H2）——</span><span class="nv"> </span><span class="s">看</span><span class="nv"> </span><span class="s">chemistry</span><span class="nv"> </span><span class="s">机理&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;复杂燃料（航空煤油代理物）有多种主组分，要列表&quot;</span>
+</code></pre></div>
+
+<h3 id="54简略intents">5.4 简略 intents</h3>
+<h4 id="ignitiondelayacceptable"><code>ignition_delay_acceptable</code></h4>
+<ul>
+<li>信号：<code>Qdot</code> 时序穿越阈值的时刻 vs 算例 endTime</li>
+<li>阈值：与设计要求 / 实验值对比</li>
+</ul>
+<h4 id="excessivecoemissions"><code>excessive_co_emissions</code></h4>
+<ul>
+<li>信号：<code>Y_CO.outlet.mean</code> × mass flow → emission index (g/kg-fuel)</li>
+<li>阈值：行业标准（航空 &lt; 50 g/kg；地面燃烧 &lt; 100 g/kg）</li>
+</ul>
+<h4 id="equivalenceratioinflammablerange"><code>equivalence_ratio_in_flammable_range</code></h4>
+<ul>
+<li>信号：从 inlet <code>Y_&lt;fuel&gt;</code> 和 <code>Y_O2</code> 算 phi</li>
+<li>可燃极限：CH4-air phi ∈ [0.5, 1.6]；H2-air phi ∈ [0.1, 7]；按燃料查表</li>
+</ul>
+<h4 id="sootformationsignificant"><code>soot_formation_significant</code></h4>
+<ul>
+<li>信号：soot mass fraction (如有 soot model) / C2H2 浓度作 surrogate</li>
+<li>状态：🔬 需要 soot model 启用</li>
+</ul>
+<h3 id="55跨求解器变量映射">5.5 跨求解器变量映射</h3>
+<p>参见 <a href="extraction_reference.md#143-燃烧">extraction_reference.md §14.3</a>。</p>
+<hr />
+<h2 id="6Numerics数值收敛守恒">6. Numerics（数值收敛/守恒）</h2>
+<h3 id="61域简介">6.1 域简介</h3>
+<p><strong>适用</strong>：所有 CFD/CSM 算例（无关物理 —— 数值健康检查是普世的）。<br />
+<strong>关键文献</strong>：Patankar 1980 <em>Numerical Heat Transfer and Fluid Flow</em>；Versteeg &amp; Malalasekera 2007；Roache 1998 <em>Verification and Validation</em>。</p>
+<h3 id="62Intent全集">6.2 Intent 全集</h3>
+<table>
+<thead>
+<tr>
+<th>Intent ID</th>
+<th>输出类型</th>
+<th>描述</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>is_converged</code></td>
+<td>boolean</td>
+<td>算例（稳态或瞬态步内）已收敛</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>is_diverged</code></td>
+<td>boolean</td>
+<td>算例发散（残差爆涨 / NaN）</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>excessive_courant</code></td>
+<td>boolean</td>
+<td>Courant 数飙升（瞬态稳定性差）</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>residual_oscillating</code></td>
+<td>boolean</td>
+<td>残差稳定但振荡</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>mass_continuity_violated</code></td>
+<td>boolean</td>
+<td>连续性方程残差异常大</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>excessive_iteration_count</code></td>
+<td>boolean</td>
+<td>迭代次数远超期望</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>timestep_collapsed</code></td>
+<td>boolean</td>
+<td>(transient) deltaT 被自动调到极小</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>nan_in_field</code></td>
+<td>boolean</td>
+<td>场中出现 NaN/Inf</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63详细判据">6.3 详细判据</h3>
+<h4 id="631isdiverged">6.3.1 <code>is_diverged</code></h4>
+<p><strong>一句话</strong>：残差异常增长或场出现 NaN，求解过程已经失控。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>residual_history.&lt;var&gt;</code></td>
+<td>extraction §3.3.E</td>
+</tr>
+<tr>
+<td><code>field_max_abs</code> per variable per time step</td>
+<td>Tier 4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">is_diverged</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">residual_history per variable</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">field_max_abs per variable</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">voting</span>
+<span class="w">    </span><span class="nt">voting_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w">            </span><span class="c1"># 任一条满足即判发散</span>
+<span class="w">    </span><span class="nt">criteria</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">residual_explosion</span>
+<span class="w">        </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;residual.last</span><span class="nv"> </span><span class="s">/</span><span class="nv"> </span><span class="s">residual.initial</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">explosion_factor&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nan_in_field</span>
+<span class="w">        </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;any(isnan(field)</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">isinf(field))&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">variable_unphysical</span>
+<span class="w">        </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;abs(T.max)</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">1e8</span><span class="nv"> </span><span class="s">OR</span><span class="nv"> </span><span class="s">abs(p.max)</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">1e15</span><span class="nv"> </span><span class="s">OR</span><span class="nv"> </span><span class="s">abs(U.magnitude.max)</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">1e6&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">explosion_factor</span><span class="p">:</span><span class="w"> </span><span class="nv">100</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Roache</span><span class="nv"> </span><span class="s">1998;</span><span class="nv"> </span><span class="s">OpenFOAM</span><span class="nv"> </span><span class="s">FATAL</span><span class="nv"> </span><span class="s">ERROR</span><span class="nv"> </span><span class="s">catalog&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;瞬态算例残差先升后降是正常的，不能只看最后一步&quot;</span>
+</code></pre></div>
+
+<h4 id="632excessivecourant">6.3.2 <code>excessive_courant</code></h4>
+<p><strong>一句话</strong>：Courant 数超过 1（显式）或某用户阈值（隐式），瞬态求解可能不稳。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>courant_max_time_series</code></td>
+<td>extraction §11.2 燃烧场景信号（也适用所有 CFD）</td>
+</tr>
+<tr>
+<td>解算器类型（显式 vs 隐式）</td>
+<td>extraction §3.3.C</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">excessive_courant</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">courant_max_time_series</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threshold</span>
+<span class="w">    </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;courant_max.last</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">courant_threshold</span><span class="nv"> </span><span class="s">OR</span><span class="nv"> </span><span class="s">courant_max.max</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">courant_alarm&quot;</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">courant_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span><span class="w">          </span><span class="c1"># 显式 default</span>
+<span class="w">      </span><span class="nt">courant_alarm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span><span class="w">              </span><span class="c1"># 即使隐式，超 5 也告警</span>
+<span class="w">    </span><span class="nt">by_condition</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">solver_class</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;implicit_pimple&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">courant_threshold</span><span class="p">:</span><span class="w"> </span><span class="nv">5.0</span><span class="p p-Indicator">,</span><span class="nt"> courant_alarm</span><span class="p">:</span><span class="w"> </span><span class="nv">50.0</span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">solver_class</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;explicit_lts&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">courant_threshold</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="nt"> courant_alarm</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Courant-Friedrichs-Lewy</span><span class="nv"> </span><span class="s">1928&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+</code></pre></div>
+
+<h4 id="633masscontinuityviolated">6.3.3 <code>mass_continuity_violated</code></h4>
+<p><strong>一句话</strong>：连续性方程残差远高于动量方程，质量不守恒。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>residual_history.continuity</code> (or <code>residual_history.p</code>)</td>
+<td>extraction §3.3.E</td>
+</tr>
+<tr>
+<td><code>mass_flow_in / mass_flow_out</code></td>
+<td>extraction §14.1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">mass_continuity_violated</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">residual_history.continuity (or residual_history.p as proxy)</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mass_flow_in</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mass_flow_out</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">voting</span>
+<span class="w">    </span><span class="nt">voting_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">criteria</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">residual_too_high</span>
+<span class="w">        </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;residual.continuity.last</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">residual_threshold&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mass_imbalance</span>
+<span class="w">        </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;abs(mass_flow_in</span><span class="nv"> </span><span class="s">-</span><span class="nv"> </span><span class="s">mass_flow_out)</span><span class="nv"> </span><span class="s">/</span><span class="nv"> </span><span class="s">abs(mass_flow_in)</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">imbalance_threshold&quot;</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">residual_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0e-3</span>
+<span class="w">      </span><span class="nt">imbalance_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.01</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Patankar</span><span class="nv"> </span><span class="s">1980</span><span class="nv"> </span><span class="s">§6.7</span><span class="nv"> </span><span class="s">SIMPLE</span><span class="nv"> </span><span class="s">algorithm&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+</code></pre></div>
+
+<h3 id="64简略intents">6.4 简略 intents</h3>
+<h4 id="isconverged聚合判据"><code>is_converged</code> (聚合判据)</h4>
+<ul>
+<li>通用形式：<code>(NOT is_diverged) AND (residual_orders &gt;= N) AND (NOT residual_oscillating)</code></li>
+<li>引用流体动力学的 <code>is_steady_state_converged</code> 或瞬态步内收敛</li>
+<li>N 默认 3，可调</li>
+</ul>
+<h4 id="naninfield"><code>nan_in_field</code></h4>
+<ul>
+<li>信号：任意场 isnan / isinf</li>
+<li>判据：直接</li>
+</ul>
+<h4 id="residualoscillating"><code>residual_oscillating</code></h4>
+<ul>
+<li>信号：残差最后 N 步的标准差 / 均值</li>
+<li>阈值：CV &gt; 50% 视为振荡</li>
+</ul>
+<h4 id="timestepcollapsed"><code>timestep_collapsed</code></h4>
+<ul>
+<li>信号：deltaT_history 时序最后值 / 初始值</li>
+<li>阈值：&lt; 0.01（瞬态 case，自适应步长）</li>
+</ul>
+<h4 id="excessiveiterationcount"><code>excessive_iteration_count</code></h4>
+<ul>
+<li>信号：iteration count vs 用户期望（需 prior knowledge）</li>
+</ul>
+<h3 id="65跨求解器变量映射">6.5 跨求解器变量映射</h3>
+<p>参见 <a href="extraction_reference.md#144-数值收敛">extraction_reference.md §14.4</a>。</p>
+<hr />
+<h2 id="7Structural结构动力学">7. Structural（结构动力学）</h2>
+<h3 id="71域简介">7.1 域简介</h3>
+<p><strong>适用</strong>：固体力学（静态 / 显式动力学 / 隐式动力学 / 模态 / 屈曲）。<br />
+<strong>典型求解器</strong>：Abaqus / LS-DYNA / MAPDL / CalculiX。<br />
+<strong>关键文献</strong>：Bathe 2014 <em>Finite Element Procedures</em>；Belytschko et al. 2014 <em>Nonlinear Finite Elements</em>。</p>
+<h3 id="72Intent全集">7.2 Intent 全集</h3>
+<table>
+<thead>
+<tr>
+<th>Intent ID</th>
+<th>输出类型</th>
+<th>描述</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>material_failed</code></td>
+<td>boolean</td>
+<td>任何单元达到材料失效准则</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>max_stress_exceeds_yield</code></td>
+<td>boolean</td>
+<td>最大 von Mises 应力超屈服强度</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>excessive_displacement</code></td>
+<td>boolean</td>
+<td>最大位移超容许</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>buckling_detected</code></td>
+<td>boolean</td>
+<td>(静态) 检测到屈曲（载荷-位移曲线斜率反转）</td>
+<td>🔬</td>
+</tr>
+<tr>
+<td><code>contact_chattering</code></td>
+<td>boolean</td>
+<td>(动态) 接触振荡</td>
+<td>🔬</td>
+</tr>
+<tr>
+<td><code>modal_collision_with_excitation</code></td>
+<td>boolean</td>
+<td>(模态) 固有频率落在激励频带</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>excessive_strain_energy_density</code></td>
+<td>boolean</td>
+<td>局部应变能密度超阈值</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td><code>negative_jacobian</code></td>
+<td>boolean</td>
+<td>(大变形) 单元出现负雅可比</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73详细判据">7.3 详细判据</h3>
+<h4 id="731maxstressexceedsyield">7.3.1 <code>max_stress_exceeds_yield</code></h4>
+<p><strong>一句话</strong>：场中最大 von Mises 应力达到或超过材料屈服强度。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>extraction 来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>max_von_mises_stress</code></td>
+<td>extraction §14.5</td>
+</tr>
+<tr>
+<td>材料 <code>yield_strength</code>（来自 setup）</td>
+<td>extraction §3.3.C 材料定义</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">max_stress_exceeds_yield</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max_von_mises_stress</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">material_yield_strength</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">threshold</span>
+<span class="w">    </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;max_von_mises_stress</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">yield_factor</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">yield_strength&quot;</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">yield_factor</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">by_condition</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">analysis_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;static_design&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">yield_factor</span><span class="p">:</span><span class="w"> </span><span class="nv">0.8</span><span class="p p-Indicator">}</span><span class="w">      </span><span class="c1"># 工程安全系数</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">analysis_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;limit_state&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">yield_factor</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Beer</span><span class="nv"> </span><span class="s">et</span><span class="nv"> </span><span class="s">al.</span><span class="nv"> </span><span class="s">2014</span><span class="nv"> </span><span class="s">*Mechanics</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">Materials*</span><span class="nv"> </span><span class="s">Ch.7&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;仅看</span><span class="nv"> </span><span class="s">von</span><span class="nv"> </span><span class="s">Mises，对脆性材料应该用最大主应力准则&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;动态算例的</span><span class="nv"> </span><span class="s">stress</span><span class="nv"> </span><span class="s">wave</span><span class="nv"> </span><span class="s">局部峰值可能误判，应该看时间平均&quot;</span>
+</code></pre></div>
+
+<h4 id="732modalcollisionwithexcitation">7.3.2 <code>modal_collision_with_excitation</code></h4>
+<p><strong>一句话</strong>：固有频率落在已知激励频带内（共振风险）。</p>
+<p><strong>依赖信号</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mode_frequencies</code> (list, 模态分析输出)</td>
+<td>extraction §14.5</td>
+</tr>
+<tr>
+<td><code>excitation_frequency_range</code> (用户提供 or 工艺已知)</td>
+<td>外部输入</td>
+</tr>
+</tbody>
+</table>
+<p><strong>判据</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">modal_collision_with_excitation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">applicable_when</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">analysis_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">modal</span>
+<span class="w">  </span><span class="nt">signals_required</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mode_frequencies (top N)</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">excitation_frequency_range (user-provided)</span>
+<span class="w">  </span><span class="nt">rule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">any_match</span>
+<span class="w">    </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;any(f</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">excitation_range</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">f</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">mode_frequencies[:N])&quot;</span>
+<span class="w">  </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">N</span><span class="p">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="nt"> safety_band_percent</span><span class="p">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">reference</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Rao</span><span class="nv"> </span><span class="s">2017</span><span class="nv"> </span><span class="s">*Mechanical</span><span class="nv"> </span><span class="s">Vibrations*</span><span class="nv"> </span><span class="s">Ch.6&quot;</span>
+<span class="w">  </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">  </span><span class="nt">limitations</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;需要用户告知激励频带</span><span class="nv"> </span><span class="s">——</span><span class="nv"> </span><span class="s">没法自动从结果文件推断&quot;</span>
+</code></pre></div>
+
+<h3 id="74简略intents">7.4 简略 intents</h3>
+<h4 id="materialfailed"><code>material_failed</code></h4>
+<ul>
+<li>信号：损伤变量 D &gt; 1（如有 damage model）or 应变超失效应变</li>
+<li>状态：⚠️ 取决于材料模型（弹塑性 vs 损伤 vs 失效）</li>
+</ul>
+<h4 id="excessivedisplacement"><code>excessive_displacement</code></h4>
+<ul>
+<li>信号：max(|U|) vs 几何特征长度</li>
+<li>阈值：例如 max_disp / characteristic_length &gt; 0.1</li>
+</ul>
+<h4 id="bucklingdetected"><code>buckling_detected</code></h4>
+<ul>
+<li>信号：load-displacement 曲线斜率反转 / 第一阶屈曲特征值 &lt; 1</li>
+<li>状态：🔬 需要专门提取 load-disp 时序</li>
+</ul>
+<h4 id="contactchattering"><code>contact_chattering</code></h4>
+<ul>
+<li>信号：接触力时序高频振荡 / 接触状态频繁切换</li>
+<li>状态：🔬 需要接触力时序</li>
+</ul>
+<h4 id="negativejacobian"><code>negative_jacobian</code></h4>
+<ul>
+<li>信号：单元雅可比 min &lt; 0 (大变形 case)</li>
+<li>来自：求解器 fatal error log</li>
+</ul>
+<h4 id="excessivestrainenergydensity"><code>excessive_strain_energy_density</code></h4>
+<ul>
+<li>信号：max(strain_energy / element_volume)</li>
+<li>阈值：与材料 toughness 相关</li>
+</ul>
+<h3 id="75跨求解器变量映射">7.5 跨求解器变量映射</h3>
+<p>参见 <a href="extraction_reference.md#145-结构">extraction_reference.md §14.5</a>。</p>
+<hr />
+<h2 id="8Multiphase多相">8. Multiphase（多相）</h2>
+<p><strong>当前状态</strong>：🔬 仅占位</p>
+<p>多相流问题（VOF / Mixture / Eulerian / DPM）的判据需要单独整理。先列出未来扩展的 intent 候选：</p>
+<table>
+<thead>
+<tr>
+<th>Intent ID（候选）</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>interface_resolution_adequate</code></td>
+<td>VOF 界面分辨率（界面厚度 vs 网格）</td>
+</tr>
+<tr>
+<td><code>bubble_dispersion_uniform</code></td>
+<td>DPM 颗粒空间分布均匀性</td>
+</tr>
+<tr>
+<td><code>phase_fraction_balanced</code></td>
+<td>相分数总和守恒</td>
+</tr>
+<tr>
+<td><code>dispersed_phase_volume_fraction_alarm</code></td>
+<td>离散相体积分数超阈值（导致 Lagrangian 假设失效）</td>
+</tr>
+<tr>
+<td><code>cavitation_detected</code></td>
+<td>(cavitation cases) 出现 cavitation</td>
+</tr>
+<tr>
+<td><code>liquid_droplet_evaporation_complete</code></td>
+<td>(spray cases) 液滴完全蒸发</td>
+</tr>
+<tr>
+<td><code>spray_penetration_depth</code></td>
+<td>喷雾穿透距离</td>
+</tr>
+</tbody>
+</table>
+<p>详细判据 Phase 3+ 实化。</p>
+<hr />
+<h2 id="9跨域考虑">9. 跨域考虑</h2>
+<h3 id="91多物理耦合的判据组合">9.1 多物理耦合的判据组合</h3>
+<p>实际工程算例往往跨多个物理域，需要<strong>组合判据</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>组合场景</th>
+<th>涉及域</th>
+<th>复合 intent 例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>喷雾燃烧</td>
+<td>combustion + multiphase + heat</td>
+<td><code>is_extinguished</code> ∧ <code>liquid_droplet_evaporation_complete</code></td>
+</tr>
+<tr>
+<td>共轭传热</td>
+<td>fluid + heat + structural (热应力)</td>
+<td><code>thermal_equilibrium_reached</code> ∧ <code>max_stress_exceeds_yield</code></td>
+</tr>
+<tr>
+<td>空气动力学 + 气动声学</td>
+<td>fluid + acoustic</td>
+<td><code>mach_regime</code> + <code>acoustic_overall_sound_pressure_level</code></td>
+</tr>
+</tbody>
+</table>
+<p>复合 intent 的实现：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">spray_combustion_healthy</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">  </span><span class="nt">composite_of</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">is_extinguished</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">mass_imbalance_alarm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">liquid_droplet_evaporation_complete</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">applicable_when</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">has_combustion_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">has_lagrangian</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+
+<h3 id="92信号缺失时的降级">9.2 信号缺失时的降级</h3>
+<p>如果某个 intent 依赖的信号在算例中<strong>不存在</strong>（如 OH 在简化机理中不存在），判据应：</p>
+<ol>
+<li>检查 <code>applicable_when</code> 是否满足</li>
+<li>如不满足 → 输出 <code>PENDING + applicability_reason: "OH not in mechanism"</code></li>
+<li>如部分满足（4 个判据中 3 个有信号）→ 用现有的 weighted voting，但置信度降级为 MED</li>
+</ol>
+<p>不允许"信号缺失就静默通过"。</p>
+<h3 id="93时间维度的判据">9.3 时间维度的判据</h3>
+<p><strong>稳态算例</strong>：所有判据都看末值（last time step）。</p>
+<p><strong>瞬态算例</strong>：判据应明确选用以下之一：
+- <code>last_value</code>（最后一帧）
+- <code>last_N_steps_mean</code>（最后 N 步均值，去抖动）
+- <code>time_window_mean</code>（指定时间窗均值）
+- <code>last_period_mean</code>（如有周期，平均一个周期）</p>
+<p>每个 intent YAML 应该指定 <code>time_aggregation_method</code>。</p>
+<hr />
+<h2 id="10阈值校准哲学">10. 阈值校准哲学</h2>
+<h3 id="101阈值绝不写死">10.1 阈值绝不写死</h3>
+<p><strong>反模式</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ❌ 不要这样</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_extinguished</span><span class="p">(</span><span class="n">qdot_max</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">qdot_max</span> <span class="o">&lt;</span> <span class="mf">1e6</span>
+</code></pre></div>
+
+<p><strong>正模式</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ✅ 阈值从 YAML 读</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_extinguished</span><span class="p">(</span><span class="n">qdot_max</span><span class="p">,</span> <span class="n">criterion</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">[</span><span class="s2">&quot;thresholds&quot;</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">][</span><span class="s2">&quot;threshold_qdot&quot;</span><span class="p">]</span>
+    <span class="c1"># ... 应用 by_condition 覆盖</span>
+    <span class="k">return</span> <span class="n">qdot_max</span> <span class="o">&lt;</span> <span class="n">threshold</span>
+</code></pre></div>
+
+<h3 id="102阈值的三层来源">10.2 阈值的三层来源</h3>
+<table>
+<thead>
+<tr>
+<th>来源</th>
+<th>优先级</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>case-level overrides</strong></td>
+<td>最高</td>
+<td>用户在 case 目录里提供 <code>criteria_overrides.yaml</code></td>
+</tr>
+<tr>
+<td><strong>by_condition match</strong></td>
+<td>中</td>
+<td>燃料/压力匹配条件下的阈值</td>
+</tr>
+<tr>
+<td><strong>default</strong></td>
+<td>最低</td>
+<td>文献给的安全默认值</td>
+</tr>
+</tbody>
+</table>
+<h3 id="103阈值校准流程">10.3 阈值校准流程</h3>
+<p>新增/调整阈值时的工作流：</p>
+<div class="codehilite"><pre><span></span><code>1. 读相关文献，给一个理论默认
+2. 在 labeled_cases 里跑一遍，看准确率
+3. 如准确率 &lt; 90%，扩 labeled_cases 或调整 by_condition 分组
+4. 标记 thresholds.calibration_status: &quot;validated_on_&lt;n&gt;_cases&quot;
+5. 提 PR 到 sim-knowledge/physics/&lt;domain&gt;/criteria.yaml
+</code></pre></div>
+
+<h3 id="104阈值的局限承认">10.4 阈值的局限承认</h3>
+<p>每个判据 YAML 必须包含 <code>limitations:</code> 字段，说明何时<strong>不适用</strong>。LLM Agent 看到 limitations 应该：
+- 先检查当前 case 是否触发某个 limitation
+- 如触发 → 降级 confidence 或拒绝判断</p>
+<hr />
+<h2 id="11labeledcases联动">11. labeled_cases 联动</h2>
+<h3 id="111labeledcases是判据的真值">11.1 labeled_cases 是判据的真值</h3>
+<p>每个 intent 必须配套<strong>至少 5 个 labeled cases</strong>（含 positive + negative 真值）：</p>
+<div class="codehilite"><pre><span></span><code>sim-knowledge/labeled_cases/
+└── combustion_extinction/
+    ├── CH4_jet_normal/
+    │   ├── case_data/                  # 算例文件夹（或软链）
+    │   └── ground_truth.yaml           # {is_extinguished: false, fuel: CH4, ...}
+    ├── CH4_jet_blowout/
+    │   ├── case_data/
+    │   └── ground_truth.yaml           # {is_extinguished: true, fuel: CH4, ...}
+    ├── DLR_A_LTS_normal/
+    ├── H2_O2_extinguished/
+    └── kerosene_flame_normal/
+</code></pre></div>
+
+<h3 id="112groundtruthyamlschema">11.2 ground_truth.yaml schema</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">case_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CH4_jet_normal</span>
+<span class="nt">case_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">D:/path/to/case</span><span class="w">        </span><span class="c1"># 绝对路径或软链</span>
+<span class="nt">labels</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">is_extinguished</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">is_ignited</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">is_steady_state_converged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">mass_imbalance_alarm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="nt">context</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">fuel</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CH4</span>
+<span class="w">  </span><span class="nt">pressure_atm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">  </span><span class="nt">combustion_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EDC</span>
+<span class="w">  </span><span class="nt">chemistry_mechanism</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GRI-Mech 3.0</span>
+<span class="nt">labeled_by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">张三</span>
+<span class="nt">labeled_at</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2026-04-27</span>
+<span class="nt">notes</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;标准</span><span class="nv"> </span><span class="s">DLR-A</span><span class="nv"> </span><span class="s">火焰算例，已收敛、有火焰&quot;</span>
+</code></pre></div>
+
+<h3 id="113标注成本">11.3 标注成本</h3>
+<p>每个 case 标注 5-15 分钟（看 ParaView 截图、对照 ground truth）。</p>
+<p>每个 intent 5-10 cases × 5 个 intents × 10 分钟 = <strong>每个物理域约 5-8 小时人工</strong>。</p>
+<p>这是<strong>机制 #2 校准检验</strong>的真值基础（design.md §11），<strong>不可省</strong>。</p>
+<h3 id="114推荐的最小labeledset">11.4 推荐的最小 labeled set</h3>
+<table>
+<thead>
+<tr>
+<th>域</th>
+<th>最小 labeled cases 数</th>
+<th>含</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Combustion</td>
+<td>8</td>
+<td>2× extinguished, 2× ignited, 2× incomplete combustion, 2× normal</td>
+</tr>
+<tr>
+<td>Fluid Dynamics</td>
+<td>6</td>
+<td>2× converged, 2× diverged, 2× recirculating</td>
+</tr>
+<tr>
+<td>Heat Transfer</td>
+<td>5</td>
+<td>1× thermal extreme, 4× normal</td>
+</tr>
+<tr>
+<td>Numerics</td>
+<td>6</td>
+<td>3× converged, 3× diverged</td>
+</tr>
+<tr>
+<td>Structural</td>
+<td>5</td>
+<td>2× yielded, 3× elastic</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="12迁移到simknowledge">12. 迁移到 sim-knowledge</h2>
+<h3 id="121迁移目标">12.1 迁移目标</h3>
+<p>本文档内容是 <code>sim-knowledge/physics/&lt;domain&gt;/</code> 的素材：</p>
+<div class="codehilite"><pre><span></span><code>sim-knowledge/physics/
+├── fluid_dynamics/
+│   ├── criteria.yaml           ← 来自本文档 §3 的 YAML 块
+│   ├── variables.yaml          ← 来自 extraction_reference §14.1
+│   └── thresholds.yaml         ← 来自 §3 的 thresholds 段
+├── heat_transfer/              ← 来自 §4
+├── combustion/                 ← 来自 §5
+├── numerics/                   ← 来自 §6
+└── structural/                 ← 来自 §7
+</code></pre></div>
+
+<h3 id="122双载体内容">12.2 双载体内容</h3>
+<p>跟 extraction_reference.md 一样，本文档与 sim-knowledge 是<strong>双载体</strong>关系：
+- markdown 叙事版（本文档）：人读 + 设计阶段参考
+- YAML 结构化版（sim-knowledge）：机读 + 运行时检索</p>
+<h3 id="123迁移时机">12.3 迁移时机</h3>
+<table>
+<thead>
+<tr>
+<th>时机</th>
+<th>动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>当前</strong>（design 阶段）</td>
+<td>保留本文档作为单一参考，便于 review</td>
+</tr>
+<tr>
+<td><strong>Phase 1 完成后</strong></td>
+<td>把核心 intent（is_extinguished / is_diverged / is_converged 等 ~10 个）的 YAML 块抽出，放进 sim-parse/core/canonical/qoi_rules/ 作为种子</td>
+</tr>
+<tr>
+<td><strong>Phase 2</strong></td>
+<td>建 sim-knowledge 仓库，从本文档拷全部 YAML 块；建立 labeled_cases；CI 检查双载体一致</td>
+</tr>
+<tr>
+<td><strong>Phase 3+</strong></td>
+<td>拓展：补 multiphase / acoustic / thermal-structural 跨域；补 LLM 用的 few_shot 示范</td>
+</tr>
+</tbody>
+</table>
+<h3 id="124高优先级迁移项">12.4 高优先级迁移项</h3>
+<p>按 ROI 排序（见 design.md §11）：</p>
+<table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>内容</th>
+<th>目标</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>⭐⭐⭐⭐⭐</td>
+<td>§5.3.1 <code>is_extinguished</code> 完整 YAML</td>
+<td>sim-knowledge/physics/combustion/criteria.yaml</td>
+</tr>
+<tr>
+<td>⭐⭐⭐⭐⭐</td>
+<td>§6.3.1 <code>is_diverged</code> + §6.3.2 <code>excessive_courant</code></td>
+<td>sim-knowledge/physics/numerics/criteria.yaml</td>
+</tr>
+<tr>
+<td>⭐⭐⭐⭐</td>
+<td>§3.3.1 <code>is_steady_state_converged</code></td>
+<td>sim-knowledge/physics/fluid_dynamics/criteria.yaml</td>
+</tr>
+<tr>
+<td>⭐⭐⭐⭐</td>
+<td>§3.3.2 <code>mach_regime</code></td>
+<td>同上</td>
+</tr>
+<tr>
+<td>⭐⭐⭐</td>
+<td>§4.3.1 <code>has_thermal_extreme</code></td>
+<td>sim-knowledge/physics/heat_transfer/criteria.yaml</td>
+</tr>
+<tr>
+<td>⭐⭐⭐</td>
+<td>§7.3.1 <code>max_stress_exceeds_yield</code></td>
+<td>sim-knowledge/physics/structural/criteria.yaml</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="13变更历史">13. 变更历史</h2>
+<ul>
+<li><strong>v0.1</strong> — 初版，覆盖 5 个物理域（Fluid Dynamics / Heat Transfer / Combustion / Numerics / Structural）+ Multiphase 占位；详细 intent 共 11 个（含 YAML 完整定义），简略 intent 共 30+ 个；含跨域组合、阈值校准哲学、labeled_cases schema 与 sim-knowledge 迁移规划</li>
+</ul>
+  </main>
+</div>
+</body>
+</html>

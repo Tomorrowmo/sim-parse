@@ -1,0 +1,3458 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>求解器结果解析参考（How to Read）</title>
+<style>
+:root {
+    --bg:#0d1117; --panel:#161b22; --panel-2:#1f2937;
+    --text:#e6edf3; --muted:#8b949e; --link:#58a6ff;
+    --border:#30363d; --accent:#7ee787;
+    --code-bg:#0b0f14;
+}
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:var(--bg); color:var(--text); }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+        "Noto Sans CJK SC", Roboto, Helvetica, Arial, sans-serif;
+    line-height:1.75; font-size:16px;
+}
+.layout { display:flex; max-width:1400px; margin:0 auto; }
+aside.toc {
+    position:sticky; top:0; align-self:flex-start;
+    width:280px; height:100vh; overflow-y:auto;
+    padding:24px 16px; border-right:1px solid var(--border);
+    background:var(--panel); font-size:14px;
+}
+aside.toc h2 { font-size:13px; color:var(--muted); text-transform:uppercase;
+    letter-spacing:1px; margin:0 0 12px; }
+aside.toc ul { list-style:none; padding-left:12px; margin:0; }
+aside.toc > ul { padding-left:0; }
+aside.toc a { color:var(--text); text-decoration:none; display:block;
+    padding:4px 8px; border-radius:6px; }
+aside.toc a:hover { background:var(--panel-2); color:var(--link); }
+main { flex:1; min-width:0; padding:48px 56px; max-width:960px; }
+@media (max-width: 900px) {
+    .layout { flex-direction:column; }
+    aside.toc { position:static; width:100%; height:auto; max-height:none;
+        border-right:none; border-bottom:1px solid var(--border); }
+    main { padding:24px 16px; }
+}
+h1, h2, h3, h4 { color:var(--text); border-bottom:1px solid var(--border);
+    padding-bottom:.3em; margin-top:2em; }
+h1 { font-size:2em; }
+h2 { font-size:1.6em; }
+h3 { font-size:1.3em; border-bottom:none; }
+h4 { font-size:1.1em; border-bottom:none; color:var(--accent); }
+a { color:var(--link); text-decoration:none; }
+a:hover { text-decoration:underline; }
+blockquote { border-left:4px solid var(--accent);
+    background:var(--panel); margin:16px 0; padding:8px 16px;
+    color:var(--muted); border-radius:0 6px 6px 0; }
+blockquote p { margin:.5em 0; }
+table { border-collapse:collapse; width:100%; margin:16px 0;
+    background:var(--panel); border-radius:6px; overflow:hidden; display:block;
+    overflow-x:auto; }
+th, td { border:1px solid var(--border); padding:8px 12px; text-align:left;
+    vertical-align:top; }
+th { background:var(--panel-2); color:var(--accent); font-weight:600; }
+tr:nth-child(even) td { background:#11161d; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas,
+    "Cascadia Code", monospace; font-size:.92em;
+    background:var(--code-bg); padding:2px 6px; border-radius:4px;
+    border:1px solid var(--border); }
+pre { background:var(--code-bg); border:1px solid var(--border);
+    border-radius:8px; padding:16px; overflow-x:auto;
+    font-size:13px; line-height:1.55; }
+pre code { background:transparent; border:none; padding:0; font-size:inherit; }
+hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
+.codehilite { background:var(--code-bg); border:1px solid var(--border);
+    border-radius:8px; margin:16px 0; }
+.codehilite pre { background:transparent; border:none; margin:0; }
+h1, h2, h3, h4 { scroll-margin-top:16px; }
+.brand { padding:12px 56px; background:var(--panel);
+    border-bottom:1px solid var(--border); color:var(--muted);
+    font-size:13px; }
+.brand strong { color:var(--accent); }
+@media (max-width: 900px) { .brand { padding:12px 16px; } }
+pre { line-height: 125%; }
+td.linenos .normal { color: #6e7681; background-color: #0d1117; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #6e7681; background-color: #0d1117; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #6e7681 }
+.codehilite { background: #0d1117; color: #E6EDF3 }
+.codehilite .c { color: #8B949E; font-style: italic } /* Comment */
+.codehilite .err { color: #F85149 } /* Error */
+.codehilite .esc { color: #E6EDF3 } /* Escape */
+.codehilite .g { color: #E6EDF3 } /* Generic */
+.codehilite .k { color: #FF7B72 } /* Keyword */
+.codehilite .l { color: #A5D6FF } /* Literal */
+.codehilite .n { color: #E6EDF3 } /* Name */
+.codehilite .o { color: #FF7B72; font-weight: bold } /* Operator */
+.codehilite .x { color: #E6EDF3 } /* Other */
+.codehilite .p { color: #E6EDF3 } /* Punctuation */
+.codehilite .ch { color: #8B949E; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #8B949E; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #8B949E; font-weight: bold; font-style: italic } /* Comment.Preproc */
+.codehilite .cpf { color: #8B949E; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #8B949E; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #8B949E; font-weight: bold; font-style: italic } /* Comment.Special */
+.codehilite .gd { color: #FFA198; background-color: #490202 } /* Generic.Deleted */
+.codehilite .ge { color: #E6EDF3; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #E6EDF3; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #FFA198 } /* Generic.Error */
+.codehilite .gh { color: #79C0FF; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #56D364; background-color: #0F5323 } /* Generic.Inserted */
+.codehilite .go { color: #8B949E } /* Generic.Output */
+.codehilite .gp { color: #8B949E } /* Generic.Prompt */
+.codehilite .gs { color: #E6EDF3; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #79C0FF } /* Generic.Subheading */
+.codehilite .gt { color: #FF7B72 } /* Generic.Traceback */
+.codehilite .g-Underline { color: #E6EDF3; text-decoration: underline } /* Generic.Underline */
+.codehilite .kc { color: #79C0FF } /* Keyword.Constant */
+.codehilite .kd { color: #FF7B72 } /* Keyword.Declaration */
+.codehilite .kn { color: #FF7B72 } /* Keyword.Namespace */
+.codehilite .kp { color: #79C0FF } /* Keyword.Pseudo */
+.codehilite .kr { color: #FF7B72 } /* Keyword.Reserved */
+.codehilite .kt { color: #FF7B72 } /* Keyword.Type */
+.codehilite .ld { color: #79C0FF } /* Literal.Date */
+.codehilite .m { color: #A5D6FF } /* Literal.Number */
+.codehilite .s { color: #A5D6FF } /* Literal.String */
+.codehilite .na { color: #E6EDF3 } /* Name.Attribute */
+.codehilite .nb { color: #E6EDF3 } /* Name.Builtin */
+.codehilite .nc { color: #F0883E; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #79C0FF; font-weight: bold } /* Name.Constant */
+.codehilite .nd { color: #D2A8FF; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #FFA657 } /* Name.Entity */
+.codehilite .ne { color: #F0883E; font-weight: bold } /* Name.Exception */
+.codehilite .nf { color: #D2A8FF; font-weight: bold } /* Name.Function */
+.codehilite .nl { color: #79C0FF; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #FF7B72 } /* Name.Namespace */
+.codehilite .nx { color: #E6EDF3 } /* Name.Other */
+.codehilite .py { color: #79C0FF } /* Name.Property */
+.codehilite .nt { color: #7EE787 } /* Name.Tag */
+.codehilite .nv { color: #79C0FF } /* Name.Variable */
+.codehilite .ow { color: #FF7B72; font-weight: bold } /* Operator.Word */
+.codehilite .pm { color: #E6EDF3 } /* Punctuation.Marker */
+.codehilite .w { color: #6E7681 } /* Text.Whitespace */
+.codehilite .mb { color: #A5D6FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #A5D6FF } /* Literal.Number.Float */
+.codehilite .mh { color: #A5D6FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #A5D6FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #A5D6FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #79C0FF } /* Literal.String.Affix */
+.codehilite .sb { color: #A5D6FF } /* Literal.String.Backtick */
+.codehilite .sc { color: #A5D6FF } /* Literal.String.Char */
+.codehilite .dl { color: #79C0FF } /* Literal.String.Delimiter */
+.codehilite .sd { color: #A5D6FF } /* Literal.String.Doc */
+.codehilite .s2 { color: #A5D6FF } /* Literal.String.Double */
+.codehilite .se { color: #79C0FF } /* Literal.String.Escape */
+.codehilite .sh { color: #79C0FF } /* Literal.String.Heredoc */
+.codehilite .si { color: #A5D6FF } /* Literal.String.Interpol */
+.codehilite .sx { color: #A5D6FF } /* Literal.String.Other */
+.codehilite .sr { color: #79C0FF } /* Literal.String.Regex */
+.codehilite .s1 { color: #A5D6FF } /* Literal.String.Single */
+.codehilite .ss { color: #A5D6FF } /* Literal.String.Symbol */
+.codehilite .bp { color: #E6EDF3 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #D2A8FF; font-weight: bold } /* Name.Function.Magic */
+.codehilite .vc { color: #79C0FF } /* Name.Variable.Class */
+.codehilite .vg { color: #79C0FF } /* Name.Variable.Global */
+.codehilite .vi { color: #79C0FF } /* Name.Variable.Instance */
+.codehilite .vm { color: #79C0FF } /* Name.Variable.Magic */
+.codehilite .il { color: #A5D6FF } /* Literal.Number.Integer.Long */</style>
+</head>
+<body>
+<div class="brand">📘 <strong>求解器结果解析参考（How to Read）</strong> · 单页静态文档</div>
+<div class="layout">
+  <aside class="toc">
+    <h2>目录</h2>
+    <ul>
+<li><a href="#目录">目录</a></li>
+<li><a href="#1文档目的与边界">1. 文档目的与边界</a></li>
+<ul>
+<li><a href="#11这份文档回答什么">1.1 这份文档回答什么</a></li>
+<li><a href="#12这份文档不回答什么">1.2 这份文档**不**回答什么</a></li>
+<li><a href="#13受众">1.3 受众</a></li>
+</ul>
+<li><a href="#2通用约定">2. 通用约定</a></li>
+<ul>
+<li><a href="#21信息族编码与designmd8一致">2.1 信息族编码（与 design.md §8 一致）</a></li>
+<li><a href="#22Tier编码与designmd7一致">2.2 Tier 编码（与 design.md §7 一致）</a></li>
+<li><a href="#23状态标记">2.3 状态标记</a></li>
+<li><a href="#24工具体系">2.4 工具体系</a></li>
+</ul>
+<li><a href="#3OpenFOAM">3. OpenFOAM</a></li>
+<ul>
+<li><a href="#31格式特征">3.1 格式特征</a></li>
+<li><a href="#32工具">3.2 工具</a></li>
+<li><a href="#33信息族">3.3 信息族</a></li>
+<ul>
+<li><a href="#族A网格Mesh">族 A — 网格 (Mesh)</a></li>
+<li><a href="#族B物理场Fields">族 B — 物理场 (Fields)</a></li>
+<li><a href="#族C求解器物理设置Setup">族 C — 求解器/物理设置 (Setup)</a></li>
+<li><a href="#族D拉格朗日离散相Lagrangian">族 D — 拉格朗日 / 离散相 (Lagrangian)</a></li>
+<li><a href="#族E运行状态Runstate">族 E — 运行状态 (Run state)</a></li>
+<li><a href="#族F后处理Postprocessing">族 F — 后处理 (Post-processing)</a></li>
+<li><a href="#族G周边文件Auxiliary">族 G — 周边文件 (Auxiliary)</a></li>
+</ul>
+<li><a href="#34已知quirks实战陷阱">3.4 已知 quirks（实战陷阱）</a></li>
+<li><a href="#35Tier覆盖总览">3.5 Tier 覆盖总览</a></li>
+</ul>
+<li><a href="#4Fluent">4. Fluent</a></li>
+<ul>
+<li><a href="#41格式特征">4.1 格式特征</a></li>
+<ul>
+<li><a href="#LegacyV18及更早默认">Legacy（V18 及更早默认）</a></li>
+<li><a href="#CFFHDF5V19+默认">CFF / HDF5（V19+ 默认）</a></li>
+</ul>
+<li><a href="#42工具">4.2 工具</a></li>
+<li><a href="#43信息族">4.3 信息族</a></li>
+<ul>
+<li><a href="#族A网格">族 A — 网格</a></li>
+<li><a href="#族B物理场">族 B — 物理场</a></li>
+<li><a href="#族C求解器物理设置">族 C — 求解器/物理设置</a></li>
+<li><a href="#族E运行状态">族 E — 运行状态</a></li>
+<li><a href="#族F后处理">族 F — 后处理</a></li>
+<li><a href="#族G周边文件">族 G — 周边文件</a></li>
+</ul>
+<li><a href="#44已知quirks">4.4 已知 quirks</a></li>
+<li><a href="#45Tier覆盖总览">4.5 Tier 覆盖总览</a></li>
+</ul>
+<li><a href="#5CGNS">5. CGNS</a></li>
+<ul>
+<li><a href="#51格式特征">5.1 格式特征</a></li>
+<li><a href="#52工具">5.2 工具</a></li>
+<li><a href="#53信息族">5.3 信息族</a></li>
+<ul>
+<li><a href="#族A网格-2">族 A — 网格</a></li>
+<li><a href="#族B物理场-2">族 B — 物理场</a></li>
+<li><a href="#族C求解器物理设置-2">族 C — 求解器/物理设置</a></li>
+<li><a href="#族E运行状态-2">族 E — 运行状态</a></li>
+</ul>
+<li><a href="#54已知quirks">5.4 已知 quirks</a></li>
+<li><a href="#55Tier覆盖总览">5.5 Tier 覆盖总览</a></li>
+</ul>
+<li><a href="#6HDF5通用">6. HDF5 通用</a></li>
+<ul>
+<li><a href="#61格式特征">6.1 格式特征</a></li>
+<li><a href="#62工具">6.2 工具</a></li>
+<li><a href="#63信息族仅T1T2可靠T3+退化">6.3 信息族（仅 T1-T2 可靠，T3+ 退化）</a></li>
+<li><a href="#64用法">6.4 用法</a></li>
+<li><a href="#65已知quirks">6.5 已知 quirks</a></li>
+</ul>
+<li><a href="#7LSDYNA">7. LS-DYNA</a></li>
+<ul>
+<li><a href="#71格式特征">7.1 格式特征</a></li>
+<li><a href="#72工具">7.2 工具</a></li>
+<li><a href="#73信息族">7.3 信息族</a></li>
+<ul>
+<li><a href="#族A网格-3">族 A — 网格</a></li>
+<li><a href="#族B物理场-3">族 B — 物理场</a></li>
+<li><a href="#族C求解器物理设置-3">族 C — 求解器/物理设置</a></li>
+<li><a href="#族E运行状态-3">族 E — 运行状态</a></li>
+<li><a href="#族F后处理-2">族 F — 后处理</a></li>
+</ul>
+<li><a href="#74已知quirks">7.4 已知 quirks</a></li>
+<li><a href="#75Tier覆盖总览">7.5 Tier 覆盖总览</a></li>
+</ul>
+<li><a href="#8STARCCM+">8. STAR-CCM+</a></li>
+<ul>
+<li><a href="#81格式特征">8.1 格式特征</a></li>
+<li><a href="#82工具">8.2 工具</a></li>
+<li><a href="#83信息族">8.3 信息族</a></li>
+<li><a href="#84已知quirks">8.4 已知 quirks</a></li>
+<li><a href="#85Tier覆盖总览">8.5 Tier 覆盖总览</a></li>
+<li><a href="#86推荐文档输出给用户">8.6 推荐文档输出（给用户）</a></li>
+</ul>
+<li><a href="#9Abaqus">9. Abaqus</a></li>
+<ul>
+<li><a href="#91格式特征">9.1 格式特征</a></li>
+<ul>
+<li><a href="#输入卡文本可读">输入卡（文本，可读）</a></li>
+<li><a href="#结果文件">结果文件</a></li>
+</ul>
+<li><a href="#92工具">9.2 工具</a></li>
+<li><a href="#93信息族">9.3 信息族</a></li>
+<ul>
+<li><a href="#来自inp无需Abaqus">来自 .inp（无需 Abaqus）</a></li>
+<li><a href="#来自datstamsg无需Abaqus">来自 .dat / .sta / .msg（无需 Abaqus）</a></li>
+<li><a href="#来自odb需要Abaqus环境">来自 .odb（**需要 Abaqus 环境**）</a></li>
+</ul>
+<li><a href="#94已知quirks">9.4 已知 quirks</a></li>
+<li><a href="#95Tier覆盖总览">9.5 Tier 覆盖总览</a></li>
+<li><a href="#96推荐策略Phase13">9.6 推荐策略（Phase 1-3）</a></li>
+</ul>
+<li><a href="#10MAPDLANSYSMechanical">10. MAPDL / ANSYS Mechanical</a></li>
+<ul>
+<li><a href="#101格式特征">10.1 格式特征</a></li>
+<ul>
+<li><a href="#输入">输入</a></li>
+<li><a href="#结果">结果</a></li>
+<li><a href="#项目">项目</a></li>
+</ul>
+<li><a href="#102工具">10.2 工具</a></li>
+<li><a href="#103信息族">10.3 信息族</a></li>
+<ul>
+<li><a href="#来自datinpAPDL">来自 .dat / .inp (APDL)</a></li>
+<li><a href="#来自rst需PyDPF">来自 .rst（需 PyDPF）</a></li>
+</ul>
+<li><a href="#104已知quirks">10.4 已知 quirks</a></li>
+<li><a href="#105Tier覆盖总览">10.5 Tier 覆盖总览</a></li>
+</ul>
+<li><a href="#11Tecplot">11. Tecplot</a></li>
+<ul>
+<li><a href="#111格式特征">11.1 格式特征</a></li>
+<li><a href="#112工具">11.2 工具</a></li>
+<li><a href="#113信息族">11.3 信息族</a></li>
+<li><a href="#114已知quirks">11.4 已知 quirks</a></li>
+<li><a href="#115Tier覆盖总览">11.5 Tier 覆盖总览</a></li>
+</ul>
+<li><a href="#12EnSightGold">12. EnSight Gold</a></li>
+<ul>
+<li><a href="#121格式特征">12.1 格式特征</a></li>
+<li><a href="#122工具">12.2 工具</a></li>
+<li><a href="#123信息族">12.3 信息族</a></li>
+<li><a href="#124已知quirks">12.4 已知 quirks</a></li>
+</ul>
+<li><a href="#13Plot3D">13. Plot3D</a></li>
+<ul>
+<li><a href="#131格式特征">13.1 格式特征</a></li>
+<li><a href="#132工具">13.2 工具</a></li>
+<li><a href="#133信息族">13.3 信息族</a></li>
+<li><a href="#134已知quirks">13.4 已知 quirks</a></li>
+</ul>
+<li><a href="#14跨求解器QOI统一映射表">14. 跨求解器 QOI 统一映射表</a></li>
+<ul>
+<li><a href="#141流体动力学">14.1 流体动力学</a></li>
+<li><a href="#142热">14.2 热</a></li>
+<li><a href="#143燃烧">14.3 燃烧</a></li>
+<li><a href="#144数值收敛">14.4 数值收敛</a></li>
+<li><a href="#145结构">14.5 结构</a></li>
+</ul>
+<li><a href="#15阶段交付路线图">15. 阶段交付路线图</a></li>
+<li><a href="#16迁移候选→simknowledge">16. 迁移候选 → sim-knowledge</a></li>
+<ul>
+<li><a href="#161迁移原则">16.1 迁移原则</a></li>
+<li><a href="#162高优先级迁移项⭐">16.2 高优先级迁移项 ⭐</a></li>
+<ul>
+<li><a href="#1621各求解器quirks→simknowledgeformats<name>quirksyaml">16.2.1 各求解器 quirks → sim-knowledge/formats/<name>/quirks.yaml</a></li>
+<li><a href="#1622跨求解器QOI映射→simknowledgephysics<domain>variablesyaml">16.2.2 跨求解器 QOI 映射 → sim-knowledge/physics/<domain>/variables.yaml</a></li>
+<li><a href="#1623格式识别签名→simknowledgeformats<name>structureyaml">16.2.3 格式识别签名 → sim-knowledge/formats/<name>/structure.yaml</a></li>
+</ul>
+<li><a href="#163双载体内容两边都保留CI检查同步">16.3 双载体内容（两边都保留，CI 检查同步）</a></li>
+<li><a href="#164留在simparsedocsextractionreferencemd不迁移">16.4 留在 sim-parse/docs/extraction_reference.md（不迁移）</a></li>
+<li><a href="#165目标simknowledge目录结构预览">16.5 目标 sim-knowledge 目录结构预览</a></li>
+<li><a href="#166迁移示例markdown→YAML">16.6 迁移示例（markdown → YAML）</a></li>
+<ul>
+<li><a href="#例1OpenFOAMquirk迁移">例 1: OpenFOAM quirk 迁移</a></li>
+<li><a href="#例2QOI映射迁移">例 2: QOI 映射迁移</a></li>
+</ul>
+<li><a href="#167迁移时机">16.7 迁移时机</a></li>
+<li><a href="#168标记约定未来用">16.8 标记约定（未来用）</a></li>
+</ul>
+<li><a href="#17变更历史">17. 变更历史</a></li>
+</ul>
+</ul>
+  </aside>
+  <main>
+<h1 id="求解器结果解析参考HowtoRead">求解器结果解析参考（How to Read）</h1>
+<blockquote>
+<p><strong>状态</strong>：参考文档 v0.1
+<strong>配套文档</strong>：<a href="design.md">design.md</a> —— 高层架构、Tier/Path 定义在 design.md，本文档<strong>只展开"读"动作的细节</strong>
+<strong>对应三轴</strong>：design.md §2 中<strong>"读"</strong> 这一动作的实施依据
+<strong>目的</strong>：为 sim-parse 各 solver 的 Path A 实现提供<strong>确定性提取需求规格</strong>，并为未来 sim-knowledge/formats/ 提供素材</p>
+</blockquote>
+<hr />
+<h2 id="目录">目录</h2>
+<ol>
+<li><a href="#1-文档目的与边界">文档目的与边界</a></li>
+<li><a href="#2-通用约定">通用约定</a></li>
+<li><a href="#3-openfoam">OpenFOAM</a></li>
+<li><a href="#4-fluent">Fluent</a></li>
+<li><a href="#5-cgns">CGNS</a></li>
+<li><a href="#6-hdf5-通用">HDF5 通用</a></li>
+<li><a href="#7-ls-dyna">LS-DYNA</a></li>
+<li><a href="#8-star-ccm">STAR-CCM+</a></li>
+<li><a href="#9-abaqus">Abaqus</a></li>
+<li><a href="#10-mapdl--ansys-mechanical">MAPDL / ANSYS Mechanical</a></li>
+<li><a href="#11-tecplot">Tecplot</a></li>
+<li><a href="#12-ensight-gold">EnSight Gold</a></li>
+<li><a href="#13-plot3d">Plot3D</a></li>
+<li><a href="#14-跨求解器-qoi-统一映射表">跨求解器 QOI 统一映射表</a></li>
+<li><a href="#15-阶段交付路线图">阶段交付路线图</a></li>
+<li><a href="#16-迁移候选--sim-knowledge">迁移候选 → sim-knowledge</a></li>
+<li><a href="#17-变更历史">变更历史</a></li>
+</ol>
+<hr />
+<h2 id="1文档目的与边界">1. 文档目的与边界</h2>
+<h3 id="11这份文档回答什么">1.1 这份文档回答什么</h3>
+<p>每种求解器的<strong>结果文件</strong>里能提取出哪些信息、来源在哪个文件/字段、对应哪个 Tier、用什么工具能拿到。</p>
+<h3 id="12这份文档不回答什么">1.2 这份文档<strong>不</strong>回答什么</h3>
+<ul>
+<li>❌ 怎么<strong>操作</strong>求解器（看 sim-skills）</li>
+<li>❌ 怎么<strong>判断</strong>物理状态（看 sim-knowledge/physics）</li>
+<li>❌ LLM Discovery（Path C）的策略（看 sim-knowledge/formats）</li>
+<li>❌ Tier / Path / 三轴架构 / 错误契约等高层定义（看 design.md）</li>
+</ul>
+<h3 id="13受众">1.3 受众</h3>
+<ul>
+<li>sim-parse 的 solver-specific Path A 实现者（写 <code>solvers/&lt;name&gt;/tier*.py</code> 的人）</li>
+<li>sim-knowledge/formats 内容贡献者</li>
+<li>想了解"sim-parse 究竟从我的算例里抓什么"的工程师</li>
+</ul>
+<hr />
+<h2 id="2通用约定">2. 通用约定</h2>
+<h3 id="21信息族编码与designmd8一致">2.1 信息族编码（与 design.md §8 一致）</h3>
+<table>
+<thead>
+<tr>
+<th>编码</th>
+<th>名称</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A</strong></td>
+<td>Mesh</td>
+<td>网格量、节点、面、边界、分解</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>Fields</td>
+<td>物理场（变量名、类型、量纲、BC、统计）</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>Setup</td>
+<td>求解器/物理设置（控制、模型、本构、化学）</td>
+</tr>
+<tr>
+<td><strong>D</strong></td>
+<td>Lagrangian</td>
+<td>拉格朗日相 / 离散相</td>
+</tr>
+<tr>
+<td><strong>E</strong></td>
+<td>Run state</td>
+<td>运行状态（时间步、收敛、残差）</td>
+</tr>
+<tr>
+<td><strong>F</strong></td>
+<td>Post-processing</td>
+<td>后处理输出（forces、probes、monitors）</td>
+</tr>
+<tr>
+<td><strong>G</strong></td>
+<td>Auxiliary</td>
+<td>周边文件（log、scripts、README、外部资源）</td>
+</tr>
+<tr>
+<td><strong>H</strong></td>
+<td>QOI</td>
+<td>派生量化指标（Tier 5，跨求解器统一）</td>
+</tr>
+<tr>
+<td><strong>I</strong></td>
+<td>Semantic</td>
+<td>语义解释（Tier 7，LLM）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22Tier编码与designmd7一致">2.2 Tier 编码（与 design.md §7 一致）</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>名称</th>
+<th>判定规则</th>
+<th>重工具？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Identify</td>
+<td>仅看签名/魔数/目录结构</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Inventory</td>
+<td>仅扫描清单</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Metadata</td>
+<td>读文本字典/header</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>4</td>
+<td>FieldStats</td>
+<td>解码数组算统计</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>5</td>
+<td>QOI</td>
+<td>查映射表归一化</td>
+<td>部分</td>
+</tr>
+<tr>
+<td>6</td>
+<td>FullData</td>
+<td>输出完整 mesh+场</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Semantic</td>
+<td>LLM 推断</td>
+<td>❌（LLM）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23状态标记">2.3 状态标记</h3>
+<table>
+<thead>
+<tr>
+<th>标记</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>✅</td>
+<td>Path A 静态 parser 完整覆盖</td>
+</tr>
+<tr>
+<td>⚠️</td>
+<td>部分覆盖 / 需要约定 / 有限制</td>
+</tr>
+<tr>
+<td>❌</td>
+<td>当前阶段不实现</td>
+</tr>
+<tr>
+<td>🔧</td>
+<td>需要外部工具预转</td>
+</tr>
+</tbody>
+</table>
+<h3 id="24工具体系">2.4 工具体系</h3>
+<p>本文档涉及的核心工具：</p>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>类型</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vtkmodules.*</code></td>
+<td>Python (官方 VTK)</td>
+<td>主力 reader</td>
+</tr>
+<tr>
+<td><code>h5py</code></td>
+<td>Python</td>
+<td>HDF5 通用</td>
+</tr>
+<tr>
+<td><code>numpy</code></td>
+<td>Python</td>
+<td>数组统计</td>
+</tr>
+<tr>
+<td><code>pyyaml</code></td>
+<td>Python</td>
+<td>字典解析（OpenFOAM-style）</td>
+</tr>
+<tr>
+<td><code>re</code> (regex)</td>
+<td>stdlib</td>
+<td>log / 头部解析</td>
+</tr>
+<tr>
+<td><code>subprocess</code></td>
+<td>stdlib</td>
+<td>调外部工具（odb2vtk / abaqus python）</td>
+</tr>
+</tbody>
+</table>
+<p>求解器特定工具（<strong>Phase 4+</strong>才考虑集成）：</p>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>求解器</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>odbAccess</code></td>
+<td>Abaqus</td>
+<td>必须在 Abaqus 环境运行</td>
+</tr>
+<tr>
+<td><code>odb2vtk</code></td>
+<td>Abaqus</td>
+<td>社区，依赖 Abaqus</td>
+</tr>
+<tr>
+<td><code>ansys-dpf-core</code> (PyDPF)</td>
+<td>MAPDL/Mechanical/Fluent</td>
+<td>官方，全平台</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3OpenFOAM">3. OpenFOAM</h2>
+<h3 id="31格式特征">3.1 格式特征</h3>
+<ul>
+<li><strong>目录式结构</strong>（不是单文件）</li>
+<li>识别签名：<code>&lt;case&gt;/system/controlDict</code> AND <code>&lt;case&gt;/constant/</code> 同时存在</li>
+<li>内部混合：text dictionaries（system/、constant/、time directories headers）+ binary fields（time directories internal data）+ log files（顶层 <code>log.*</code>）</li>
+<li>版本范围：v2206 - v2406（ESI fork），Foundation fork 也兼容</li>
+<li>多 region 支持：<code>constant/&lt;region&gt;/polyMesh/</code></li>
+<li>并行支持：<code>processor*/</code> 子目录</li>
+</ul>
+<h3 id="32工具">3.2 工具</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1-T3</td>
+<td>自写 <code>_foam_dict.py</code> text parser + <code>_polymesh.py</code> header reader</td>
+</tr>
+<tr>
+<td>T4</td>
+<td><code>vtkmodules.vtkIOGeometry.vtkOpenFOAMReader</code></td>
+</tr>
+<tr>
+<td>T6</td>
+<td>同上 → <code>vtkXMLUnstructuredGridWriter</code></td>
+</tr>
+</tbody>
+</table>
+<p>VTK 调用要点：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 需要 .foam marker 文件作为入口（如不存在自动创建）</span>
+<span class="n">foam_marker</span> <span class="o">=</span> <span class="n">case_root</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">case_root</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.foam&quot;</span>
+<span class="n">foam_marker</span><span class="o">.</span><span class="n">touch</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkOpenFOAMReader</span><span class="p">()</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">SetFileName</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">foam_marker</span><span class="p">))</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">UpdateInformation</span><span class="p">()</span>         <span class="c1"># 不读数据，仅元信息</span>
+<span class="n">times</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">GetTimeValues</span><span class="p">()</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">SetTimeValue</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>             <span class="c1"># 选时间步</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">SetCellArrayStatus</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="c1"># 启用变量</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">Update</span><span class="p">()</span>                    <span class="c1"># 此时才真正读</span>
+</code></pre></div>
+
+<h3 id="33信息族">3.3 信息族</h3>
+<h4 id="族A网格Mesh">族 A — 网格 (Mesh)</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nCells</code></td>
+<td>3</td>
+<td><code>constant/polyMesh/owner</code> 头部 <code>note "nCells: NNN nFaces: NNN ..."</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>nPoints</code></td>
+<td>3</td>
+<td><code>constant/polyMesh/points</code> header / 第一行</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>nFaces</code></td>
+<td>3</td>
+<td><code>constant/polyMesh/faces</code> 头部</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>nInternalFaces</code></td>
+<td>3</td>
+<td><code>constant/polyMesh/owner</code> 头部</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>bounding_box</code></td>
+<td>4</td>
+<td>VTK 读 <code>points</code> 算 min/max</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>mesh_type</code>（hex/tet/poly/混合）</td>
+<td>4</td>
+<td>VTK CellTypes 直方图</td>
+<td>⚠️（启发式）</td>
+</tr>
+<tr>
+<td><code>boundary_patches</code>（list of {name, type, nFaces, startFace}）</td>
+<td>3</td>
+<td><code>constant/polyMesh/boundary</code> 文本字典</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>cellZones</code>, <code>faceZones</code>, <code>pointSets</code></td>
+<td>2-3</td>
+<td><code>constant/polyMesh/{cellZones,faceZones,sets/}*</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>multi_region</code></td>
+<td>1</td>
+<td><code>constant/&lt;region&gt;/polyMesh/</code> 子目录</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>decomposition</code></td>
+<td>3</td>
+<td><code>system/decomposeParDict</code> + <code>processor*</code> 数</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族B物理场Fields">族 B — 物理场 (Fields)</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variables</code></td>
+<td>2</td>
+<td>时间目录里的文件名（去 .gz）</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>variable_class</code> (volScalarField/volVectorField/...)</td>
+<td>3</td>
+<td>场文件 <code>class</code> header</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>variable_dimensions</code> ([kg m s K mol A cd])</td>
+<td>3</td>
+<td>场文件 <code>dimensions</code> 行</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>boundary_conditions</code> (per patch per field)</td>
+<td>3</td>
+<td>场文件 <code>boundaryField{...}</code> 块</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>internal_field_kind</code> (uniform/nonuniform)</td>
+<td>3</td>
+<td>场文件 <code>internalField</code> 行</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>variable_ranges</code> (per-field min/max/mean)</td>
+<td>4</td>
+<td>VTK 读 internalField → numpy</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>variable_histograms</code></td>
+<td>4</td>
+<td>numpy histogram</td>
+<td>⚠️（按需）</td>
+</tr>
+<tr>
+<td><code>time_evolution_stats</code></td>
+<td>4</td>
+<td>遍历所有时间步</td>
+<td>⚠️（按需）</td>
+</tr>
+<tr>
+<td><code>full_field_arrays</code> (point/cell-centered)</td>
+<td>6</td>
+<td>VTK → VTU</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族C求解器物理设置Setup">族 C — 求解器/物理设置 (Setup)</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>application</code></td>
+<td>1-3</td>
+<td><code>system/controlDict::application</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>time_control</code> (startTime/endTime/deltaT/writeInterval/adjustTimeStep/writeFormat)</td>
+<td>3</td>
+<td><code>system/controlDict</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>discretization_schemes</code> (div/grad/laplacian)</td>
+<td>3</td>
+<td><code>system/fvSchemes</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>linear_solvers</code></td>
+<td>3</td>
+<td><code>system/fvSolution</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>turbulence</code> (RAS/LES + model + coeffs)</td>
+<td>3</td>
+<td><code>constant/turbulenceProperties</code> + <code>RASProperties</code>/<code>LESProperties</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>thermophysics</code> (type/mixture/transport/thermo/EOS)</td>
+<td>3</td>
+<td><code>constant/thermophysicalProperties</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>chemistry</code> (enabled / mechanism / solver / reduction / tabulation)</td>
+<td>3</td>
+<td><code>constant/chemistryProperties</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>combustion_model</code> (PaSR/EDC/laminar)</td>
+<td>3</td>
+<td><code>constant/combustionProperties</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>spray_settings</code></td>
+<td>3</td>
+<td><code>constant/sprayCloudProperties</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>gravity</code></td>
+<td>3</td>
+<td><code>constant/g</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>MRF</code>, <code>fvOptions</code></td>
+<td>3</td>
+<td><code>constant/MRFProperties</code>, <code>system/fvOptions</code></td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族D拉格朗日离散相Lagrangian">族 D — 拉格朗日 / 离散相 (Lagrangian)</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>has_lagrangian</code></td>
+<td>1</td>
+<td><code>&lt;time&gt;/lagrangian/</code> 是否存在</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>cloud_names</code></td>
+<td>2</td>
+<td><code>&lt;time&gt;/lagrangian/&lt;cloud&gt;/</code> 子目录</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>cloud_variables</code></td>
+<td>2</td>
+<td>cloud 子目录文件名</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>particle_count</code></td>
+<td>4</td>
+<td>VTK 读 <code>nParticle</code> 或 <code>positions</code> 长度</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>particle_distributions</code> (直径/温度/速度直方图)</td>
+<td>4</td>
+<td>VTK + numpy</td>
+<td>⚠️（按需）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族E运行状态Runstate">族 E — 运行状态 (Run state)</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>time_steps_written</code></td>
+<td>2</td>
+<td>顶层目录浮点目录扫描</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>latest_time</code></td>
+<td>2</td>
+<td>排序取最大</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>n_time_steps</code></td>
+<td>2</td>
+<td>计数</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>is_completed</code></td>
+<td>3</td>
+<td>latest_time vs <code>controlDict::endTime</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>residual_history</code> (per variable)</td>
+<td>4</td>
+<td>log 文件正则 <code>Solving for ...</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>convergence_orders</code></td>
+<td>4</td>
+<td>残差初值/末值 log10</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>convergence_status</code> (converged/not_converged/unknown)</td>
+<td>4</td>
+<td>残差末值 vs 收敛阈值</td>
+<td>⚠️（启发式）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族F后处理Postprocessing">族 F — 后处理 (Post-processing)</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>function_objects</code></td>
+<td>2-3</td>
+<td><code>system/controlDict::functions</code> 或独立 dict</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>forces_history</code> (CL/CD/CM 时序)</td>
+<td>4</td>
+<td><code>postProcessing/forces*/&lt;time&gt;/forceCoeffs.dat</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>probes_data</code></td>
+<td>4</td>
+<td><code>postProcessing/probes/&lt;time&gt;/&lt;var&gt;</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>sampling_planes</code></td>
+<td>2</td>
+<td><code>system/cuttingPlane</code>、<code>postProcessing/cuttingPlane/</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>monitors</code> (mass flow / 平均量)</td>
+<td>4</td>
+<td><code>postProcessing/&lt;name&gt;/&lt;time&gt;/*.dat</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>residual_logs</code> (functionObject 写出)</td>
+<td>4</td>
+<td><code>postProcessing/residuals/&lt;time&gt;/residuals.dat</code></td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族G周边文件Auxiliary">族 G — 周边文件 (Auxiliary)</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>log_files</code></td>
+<td>2</td>
+<td>顶层 <code>log.*</code> + <code>processor*/log.*</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>scripts</code> (Allrun/Allclean/Allmesh)</td>
+<td>2</td>
+<td>顶层脚本</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>readme_text</code></td>
+<td>2</td>
+<td><code>README*</code>, <code>*.txt</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>openfoam_version</code></td>
+<td>1-3</td>
+<td>字典 header <code>version</code> 字段 / log banner</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>case_origin_path</code> (log banner <code>Case :</code> 行)</td>
+<td>3</td>
+<td>log 头部 banner</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>external_resources</code></td>
+<td>2</td>
+<td><code>chemkin/</code>, <code>constant/triSurface/</code></td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h3 id="34已知quirks实战陷阱">3.4 已知 quirks（实战陷阱）</h3>
+<ol>
+<li><strong>求解器主 log 不在顶层</strong> —— 并行案例的 <code>runParallel</code> 把 log 放在 <code>processor*/log.&lt;solver&gt;</code>，主 case 跑完 <code>reconstructPar</code> 后<strong>主 log 不会被合并出来</strong>。Tier 2 inventory 必须扫两处</li>
+<li><strong><code>endTime=5000, deltaT=1</code> 不一定是物理时间</strong> —— LTS（局部时间步）求解器把 endTime 当迭代步数，路径名常含 <code>LTS</code> 字样。Tier 7 LLM 可推断；纯静态会误读为"5000 秒"</li>
+<li><strong>0/T 是 nonuniform</strong> —— 表明 <code>setFieldsDict</code> 干预了初值（数值点火等）。这是 case-specific 强信号，应作为元数据维度</li>
+<li><strong>chemistryProperties 含 <code>importantSpecies</code></strong> —— 该列表跟 <code>constant/reactions</code> 里的实际物种数差很多（前者是关键物种、后者是完整机理）</li>
+<li><strong><code>format binary</code> 配 <code>arch "LSB;label=32;scalar=64"</code></strong> —— 跨平台读时要注意字节序和精度</li>
+<li><strong><code>.gz</code> 压缩</strong> —— 老版 OpenFOAM 默认压缩，新版默认不压；VTK reader 自动处理，自写 parser 需要 gzip 模块</li>
+<li><strong><code>runTimeModifiable true</code></strong> —— 表示 controlDict 在跑过程中可被改动；Tier 3 提取的值是"最后一次写入的值"，不一定是初始值</li>
+<li><strong>多 region 的 polyMesh 在 region 子目录里</strong> —— <code>constant/&lt;region&gt;/polyMesh/</code>，根 <code>constant/polyMesh/</code> 可能不存在</li>
+<li><strong><code>v2212</code> vs <code>2212</code></strong> —— 字典 header <code>version</code> 有时带 <code>v</code> 有时不带，正则要兼容</li>
+<li><strong><code>controlDict::application</code> 可能是符号链接</strong> —— 罕见但存在，要 resolve</li>
+<li><strong>vtkOpenFOAMReader 输出 stderr 警告 <code>boundaryField &lt;patch&gt; not found</code></strong> —— 反应流案例的某些组分场（例如 OH/Qdot/EDC_kappa）在某些 patch 上可能没有 boundaryField 块，VTK 给出的是 WARN 级别提示。<strong>对 internalField 解码不影响</strong>，但会污染日志。生产中可用 <code>vtkOutputWindow.SetGlobalWarningDisplay(0)</code> 关掉</li>
+<li><strong>boundary 文件 patch 数 vs blockMeshDict patch 数</strong> —— blockMesh 可能添加 <code>defaultFaces</code> 等内部 patch，导致 polyMesh/boundary 比 blockMeshDict::boundary 多 1-2 项（实测 DLR_A_cavity：blockMeshDict 9 个，polyMesh/boundary 10 个）</li>
+<li><strong><code>endTime</code> 在 controlDict 里通常是 int</strong> —— 即 <code>endTime 5000;</code> 而非 <code>5000.0;</code>。下游比较时要兼容 int/float</li>
+<li><strong><code>is_completed</code> 判据对 LTS 求解器有歧义</strong> —— LTS pseudo-time 算例 <code>latest_time &gt;= endTime</code> 同时为真，但物理意义是"迭代收敛"不是"物理时间到点"。该字段的语义因 case 而异，需 Tier 7 LLM 区分</li>
+</ol>
+<h3 id="35Tier覆盖总览">3.5 Tier 覆盖总览</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>状态</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1 Identify</td>
+<td>✅ Phase 1</td>
+<td>目录结构 + version banner</td>
+</tr>
+<tr>
+<td>T2 Inventory</td>
+<td>✅ Phase 1</td>
+<td>时间步 / 变量 / log / scripts</td>
+</tr>
+<tr>
+<td>T3 Metadata</td>
+<td>✅ Phase 1</td>
+<td>所有字典 + polyMesh header</td>
+</tr>
+<tr>
+<td>T4 FieldStats</td>
+<td>✅ Phase 1</td>
+<td>VTK reader</td>
+</tr>
+<tr>
+<td>T5 QOI</td>
+<td>⚠️ Phase 1 接口 / Phase 2 实化</td>
+<td>物理映射表</td>
+</tr>
+<tr>
+<td>T6 FullData</td>
+<td>⚠️ Phase 2</td>
+<td>VTK → VTU</td>
+</tr>
+<tr>
+<td>T7 Semantic</td>
+<td>❌ Phase 3+</td>
+<td>LLM</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4Fluent">4. Fluent</h2>
+<h3 id="41格式特征">4.1 格式特征</h3>
+<p>两种主要格式：</p>
+<h4 id="LegacyV18及更早默认">Legacy（V18 及更早默认）</h4>
+<ul>
+<li><strong><code>&lt;case&gt;.cas</code></strong> —— mesh + boundary + materials + 求解器设置（二进制或 ASCII）</li>
+<li><strong><code>&lt;case&gt;.dat</code></strong> —— 流场结果（二进制）</li>
+<li>两个文件<strong>必须配对</strong></li>
+</ul>
+<h4 id="CFFHDF5V19+默认">CFF / HDF5（V19+ 默认）</h4>
+<ul>
+<li><strong><code>&lt;case&gt;.cas.h5</code></strong> + <strong><code>&lt;case&gt;.dat.h5</code></strong> —— HDF5 后端</li>
+<li>也可单文件 <code>&lt;case&gt;.h5</code> 含全部</li>
+<li>识别：HDF5 magic <code>89 48 44 46 ...</code></li>
+</ul>
+<h3 id="42工具">4.2 工具</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1</td>
+<td>后缀 + magic</td>
+</tr>
+<tr>
+<td>T2-T3</td>
+<td><code>vtkmodules.vtkIOGeometry.vtkFLUENTReader</code>（legacy）；<code>vtkmodules.vtkIOFLUENTCFF.vtkFLUENTCFFReader</code>（CFF）</td>
+</tr>
+<tr>
+<td>T4</td>
+<td>同上（reader 提供 cell data 数组）</td>
+</tr>
+<tr>
+<td>T6</td>
+<td>同上 → VTU</td>
+</tr>
+</tbody>
+</table>
+<p>VTK 调用要点：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Legacy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">vtkmodules.vtkIOGeometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">vtkFLUENTReader</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">vtkFLUENTReader</span><span class="p">()</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">SetFileName</span><span class="p">(</span><span class="s2">&quot;case.cas&quot;</span><span class="p">)</span>     <span class="c1"># 自动找同名 .dat</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">Update</span><span class="p">()</span>
+<span class="n">mb</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">GetOutput</span><span class="p">()</span>            <span class="c1"># vtkMultiBlockDataSet (per cell zone)</span>
+
+<span class="c1"># CFF / HDF5</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">vtkmodules.vtkIOFLUENTCFF</span><span class="w"> </span><span class="kn">import</span> <span class="n">vtkFLUENTCFFReader</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">vtkFLUENTCFFReader</span><span class="p">()</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">SetFileName</span><span class="p">(</span><span class="s2">&quot;case.cas.h5&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="43信息族">4.3 信息族</h3>
+<h4 id="族A网格">族 A — 网格</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nCells</code></td>
+<td>3</td>
+<td><code>.cas</code> section 12（cells）</td>
+</tr>
+<tr>
+<td><code>nFaces</code></td>
+<td>3</td>
+<td><code>.cas</code> section 13（faces）</td>
+</tr>
+<tr>
+<td><code>nNodes</code></td>
+<td>3</td>
+<td><code>.cas</code> section 10（nodes）</td>
+</tr>
+<tr>
+<td><code>cell_zones</code> (id, name, type=fluid/solid, n_cells)</td>
+<td>3</td>
+<td><code>.cas</code> section 39（cell zone conditions） + 12</td>
+</tr>
+<tr>
+<td><code>face_zones</code> (boundary patches: id, name, type, n_faces)</td>
+<td>3</td>
+<td><code>.cas</code> section 13 + 39</td>
+</tr>
+<tr>
+<td><code>bounding_box</code></td>
+<td>4</td>
+<td>VTK</td>
+</tr>
+<tr>
+<td><code>mesh_type</code></td>
+<td>4</td>
+<td>cell type IDs</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族B物理场">族 B — 物理场</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variables</code></td>
+<td>2</td>
+<td><code>.dat</code> 提供的 cell data 数组名</td>
+</tr>
+<tr>
+<td><code>variable_storage</code> (cell-centered)</td>
+<td>3</td>
+<td>Fluent 默认 cell-centered</td>
+</tr>
+<tr>
+<td><code>variable_units</code></td>
+<td>3</td>
+<td>通过 Fluent 单位系统映射</td>
+</tr>
+<tr>
+<td><code>variable_ranges</code></td>
+<td>4</td>
+<td>VTK + numpy</td>
+</tr>
+<tr>
+<td><code>full_field_arrays</code></td>
+<td>6</td>
+<td>VTK → VTU</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族C求解器物理设置">族 C — 求解器/物理设置</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>solver_type</code> (pressure-based / density-based)</td>
+<td>3</td>
+<td><code>.cas</code> solver settings</td>
+</tr>
+<tr>
+<td><code>time_formulation</code> (steady / transient)</td>
+<td>3</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>turbulence_model</code></td>
+<td>3</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>multiphase_model</code> (VOF / Mixture / Eulerian)</td>
+<td>3</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>species_model</code></td>
+<td>3</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>boundary_condition_settings</code> (per face_zone)</td>
+<td>3</td>
+<td><code>.cas</code> section 39</td>
+</tr>
+<tr>
+<td><code>materials</code></td>
+<td>3</td>
+<td><code>.cas</code> material library</td>
+</tr>
+<tr>
+<td><code>udf_libraries</code></td>
+<td>3</td>
+<td><code>.cas</code> UDF section（如有）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族E运行状态">族 E — 运行状态</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>iteration_count</code> (steady)</td>
+<td>3</td>
+<td><code>.dat</code> flow time / iteration</td>
+</tr>
+<tr>
+<td><code>flow_time</code> (transient)</td>
+<td>3</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>residual_history</code></td>
+<td>4</td>
+<td><code>.trn</code> transcript file（如有）</td>
+</tr>
+<tr>
+<td><code>convergence_status</code></td>
+<td>4</td>
+<td><code>.trn</code> 末尾</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族F后处理">族 F — 后处理</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>report_files</code></td>
+<td>2</td>
+<td>顶层 <code>*.out</code>、<code>report-*.out</code></td>
+</tr>
+<tr>
+<td><code>report_definitions</code></td>
+<td>4</td>
+<td><code>.out</code> 文件 CSV 解析</td>
+</tr>
+<tr>
+<td><code>force_reports</code>, <code>moment_reports</code>, <code>mass_flow_reports</code></td>
+<td>4</td>
+<td>各自 <code>.out</code> 文件</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族G周边文件">族 G — 周边文件</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>journal_files</code> (.jou)</td>
+<td>2</td>
+<td>TUI 命令历史</td>
+</tr>
+<tr>
+<td><code>transcript_files</code> (.trn)</td>
+<td>2</td>
+<td>求解器输出 transcript</td>
+</tr>
+<tr>
+<td><code>fluent_version</code></td>
+<td>3</td>
+<td><code>.cas</code> header / .trn banner</td>
+</tr>
+<tr>
+<td><code>case_settings_export</code></td>
+<td>2</td>
+<td>用户可能导出 <code>.scm</code> Scheme 设置</td>
+</tr>
+</tbody>
+</table>
+<h3 id="44已知quirks">4.4 已知 quirks</h3>
+<ol>
+<li><strong><code>.cas</code> 和 <code>.dat</code> 必须配对</strong> —— 缺一不可，命名不匹配会报错</li>
+<li><strong>CFF (.cas.h5) 是 V19+ 才有</strong> —— 老版本写出的文件 vtkFLUENTCFFReader 读不了</li>
+<li><strong>多 cell zone 是常态</strong> —— Fluent 用 cell zones 区分流体/固体/旋转域；输出是 vtkMultiBlockDataSet 不是单 grid</li>
+<li><strong>face zone 的 BC 类型 ID</strong> —— 数字 ID 映射到 Fluent 内部枚举，需要查表（见 <a href="https://">Fluent UDF Manual</a> appendix）</li>
+<li><strong>UDF 编译产物</strong> —— <code>libudf/</code> 子目录含 .so/.dll；<code>.cas</code> 引用了 UDF 但运行时若 lib 缺失会失败（不影响 sim-parse 解析）</li>
+<li><strong>稳态 vs 瞬态的时间字段不同</strong> —— 稳态用 iteration count，瞬态用 flow time + time step</li>
+<li><strong><code>.trn</code> 不一定保留</strong> —— 取决于用户是否打开 transcript 录制</li>
+<li><strong>Polyhedral mesh 在新版广泛使用</strong> —— VTK 老版本 reader 处理 poly 元素可能不全</li>
+<li><strong>国际化变量名</strong> —— 部分 Fluent 版本在汉化界面下 <code>.cas</code> 字符串可能含中文，需 UTF-8 解码</li>
+<li><strong>UDM (User-Defined Memory)</strong> —— 用户脚本可写自定义场到 <code>udm-0</code>/<code>udm-1</code>/...，名字不语义化</li>
+</ol>
+<h3 id="45Tier覆盖总览">4.5 Tier 覆盖总览</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>状态</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1 Identify</td>
+<td>✅ Phase 2</td>
+<td>后缀 + magic</td>
+</tr>
+<tr>
+<td>T2 Inventory</td>
+<td>✅ Phase 2</td>
+<td>reader.UpdateInformation()</td>
+</tr>
+<tr>
+<td>T3 Metadata</td>
+<td>✅ Phase 2</td>
+<td>reader 元信息 + .trn</td>
+</tr>
+<tr>
+<td>T4 FieldStats</td>
+<td>✅ Phase 2</td>
+<td>VTK reader</td>
+</tr>
+<tr>
+<td>T5 QOI</td>
+<td>✅ Phase 2</td>
+<td>force/mass flow 报告</td>
+</tr>
+<tr>
+<td>T6 FullData</td>
+<td>✅ Phase 2</td>
+<td>VTU 导出</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5CGNS">5. CGNS</h2>
+<h3 id="51格式特征">5.1 格式特征</h3>
+<ul>
+<li><strong>HDF5 后端</strong>（CGNS v3.0+），少数旧文件用 ADF（不支持）</li>
+<li>标准化目录结构：<code>/CGNSBase_&lt;n&gt;/Zone_&lt;n&gt;/...</code></li>
+<li>识别：HDF5 magic + 顶层 group <code>/CGNSBase_*</code></li>
+<li>多 zone 支持</li>
+<li>结构化（IJK） + 非结构化（element-based）混合</li>
+</ul>
+<h3 id="52工具">5.2 工具</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1</td>
+<td>h5py 检查 group 结构</td>
+</tr>
+<tr>
+<td>T2-T3</td>
+<td><code>vtkmodules.vtkIOCGNSReader.vtkCGNSReader</code>（推荐）；备选 h5py 直接遍历</td>
+</tr>
+<tr>
+<td>T4</td>
+<td>vtkCGNSReader</td>
+</tr>
+<tr>
+<td>T6</td>
+<td>vtkCGNSReader → VTU</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53信息族">5.3 信息族</h3>
+<h4 id="族A网格-2">族 A — 网格</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>n_bases</code></td>
+<td>1</td>
+<td><code>/CGNSBase_*</code> 数</td>
+</tr>
+<tr>
+<td><code>zones</code> (per base: name, type=Structured/Unstructured, dimensions)</td>
+<td>2-3</td>
+<td><code>/CGNSBase_*/Zone_*</code></td>
+</tr>
+<tr>
+<td><code>zone_size</code> (IJK for structured / vertex+cell counts for unstructured)</td>
+<td>3</td>
+<td>Zone header</td>
+</tr>
+<tr>
+<td><code>boundary_conditions</code> (per zone)</td>
+<td>3</td>
+<td><code>/Zone_*/ZoneBC_*/BC_*</code></td>
+</tr>
+<tr>
+<td><code>families</code></td>
+<td>3</td>
+<td><code>/CGNSBase_*/Family_*</code></td>
+</tr>
+<tr>
+<td><code>bounding_box</code></td>
+<td>4</td>
+<td>VTK</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族B物理场-2">族 B — 物理场</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>flow_solutions</code> (per zone)</td>
+<td>2</td>
+<td><code>/Zone_*/FlowSolution_*</code></td>
+</tr>
+<tr>
+<td><code>variables</code> (per FlowSolution)</td>
+<td>2</td>
+<td>DataArray 名</td>
+</tr>
+<tr>
+<td><code>data_location</code> (CellCenter / Vertex)</td>
+<td>3</td>
+<td>FlowSolution 属性</td>
+</tr>
+<tr>
+<td><code>variable_ranges</code></td>
+<td>4</td>
+<td>VTK</td>
+</tr>
+<tr>
+<td><code>non_dimensional_state</code> (Mach, Reynolds, ...)</td>
+<td>3</td>
+<td><code>/CGNSBase_*/ReferenceState</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="族C求解器物理设置-2">族 C — 求解器/物理设置</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cgns_version</code></td>
+<td>1</td>
+<td><code>/CGNSLibraryVersion</code></td>
+</tr>
+<tr>
+<td><code>creator_solver</code></td>
+<td>3</td>
+<td><code>/CGNSBase_*/Descriptor_*</code> 中常含求解器标识</td>
+</tr>
+<tr>
+<td><code>governing_equations</code></td>
+<td>3</td>
+<td><code>/CGNSBase_*/GoverningEquations</code></td>
+</tr>
+<tr>
+<td><code>gas_model</code></td>
+<td>3</td>
+<td><code>/CGNSBase_*/FlowEquationSet/GasModel</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="族E运行状态-2">族 E — 运行状态</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>time_iter_values</code> (transient)</td>
+<td>2</td>
+<td><code>/CGNSBase_*/BaseIterativeData/TimeValues</code></td>
+</tr>
+<tr>
+<td><code>n_time_steps</code></td>
+<td>2</td>
+<td>同上长度</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54已知quirks">5.4 已知 quirks</h3>
+<ol>
+<li><strong>vtkCGNSReader 不一定全覆盖标准</strong> —— 罕见的 element 类型可能不支持</li>
+<li><strong>混合 base</strong> —— 同一文件可能含 CFD base + 结构 base</li>
+<li><strong>多语言写入器</strong>（pyCGNS / cgnslib / 自定义）写出的细微差异</li>
+<li><strong>Family BC 的层次</strong> —— BC 可以引用 Family 而不是直接定义类型</li>
+</ol>
+<h3 id="55Tier覆盖总览">5.5 Tier 覆盖总览</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1-T4</td>
+<td>✅ Phase 2</td>
+</tr>
+<tr>
+<td>T5</td>
+<td>⚠️ Phase 2（受控变量名 ↔ CGNS Standard Name 映射）</td>
+</tr>
+<tr>
+<td>T6</td>
+<td>✅ Phase 2</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6HDF5通用">6. HDF5 通用</h2>
+<h3 id="61格式特征">6.1 格式特征</h3>
+<ul>
+<li>任何 HDF5 文件，含义不绑求解器</li>
+<li>Magic：<code>89 48 44 46 0D 0A 1A 0A</code> (字节)</li>
+<li>路径如 <code>/group1/group2/dataset</code></li>
+<li>属性 (attrs) 附在 group / dataset 上</li>
+</ul>
+<h3 id="62工具">6.2 工具</h3>
+<p><code>h5py</code>，本节<strong>不</strong>使用 vtkCGNSReader（那是已知是 CGNS 才用）。</p>
+<h3 id="63信息族仅T1T2可靠T3+退化">6.3 信息族（仅 T1-T2 可靠，T3+ 退化）</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>is_hdf5</code></td>
+<td>1</td>
+<td>magic bytes</td>
+</tr>
+<tr>
+<td><code>is_cgns_like</code></td>
+<td>1</td>
+<td>top-level <code>/CGNSBase_*</code> 存在</td>
+</tr>
+<tr>
+<td><code>is_fluent_cff</code></td>
+<td>1</td>
+<td>顶层 attr <code>Solver=Fluent</code></td>
+</tr>
+<tr>
+<td><code>is_h5part</code></td>
+<td>1</td>
+<td><code>/Step#*/positions</code> 模式</td>
+</tr>
+<tr>
+<td><code>top_level_groups</code></td>
+<td>2</td>
+<td><code>f.keys()</code></td>
+</tr>
+<tr>
+<td><code>dataset_tree</code> (path, shape, dtype, chunks)</td>
+<td>2</td>
+<td><code>f.visititems()</code></td>
+</tr>
+<tr>
+<td><code>attributes</code> (root + per-group)</td>
+<td>2</td>
+<td><code>f.attrs</code></td>
+</tr>
+<tr>
+<td><code>dataset_value_ranges</code></td>
+<td>4</td>
+<td>numpy min/max（对小数据集）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="64用法">6.4 用法</h3>
+<ul>
+<li><strong>Path B 兜底</strong>：当 Tier 1 识别为 HDF5 但不匹配任何已知变种（CGNS / Fluent CFF / h5part）时，走通用 dump</li>
+<li><strong>Discovery Agent 启发式输入</strong>：dump 出的 tree + attrs 是 LLM 推断 solver/structure 的素材</li>
+</ul>
+<h3 id="65已知quirks">6.5 已知 quirks</h3>
+<ol>
+<li><strong>大文件读 metadata 也慢</strong> —— 用 <code>with h5py.File(path, 'r', swmr=True)</code> 提速</li>
+<li><strong>External links</strong> —— 可能引用其他 HDF5 文件（<code>f['group'].file != f.file</code>）</li>
+<li><strong>Compound dtype</strong> —— numpy structured array，shape 表示外部维度</li>
+<li><strong>Strings 编码</strong> —— Python 3 + h5py 3.x 默认 bytes，需要 <code>.decode()</code></li>
+<li><strong>Chunks vs contiguous</strong> —— 不影响读取但影响性能</li>
+</ol>
+<hr />
+<h2 id="7LSDYNA">7. LS-DYNA</h2>
+<h3 id="71格式特征">7.1 格式特征</h3>
+<ul>
+<li><strong>输入</strong>：<code>.k</code> / <code>.key</code> / <code>.dyn</code> —— Keyword 格式（文本）</li>
+<li><strong>结果</strong>：</li>
+<li><code>d3plot</code> —— 主结果（位移、应力、应变 ……）；分布式（<code>d3plot01</code>, <code>d3plot02</code>, ...）</li>
+<li><code>d3thdt</code> —— 时间历史</li>
+<li><code>d3hsp</code> —— 求解日志（文本）</li>
+<li><code>binout</code> —— 二进制输出（节点/单元历程）</li>
+<li><code>glstat</code>, <code>matsum</code>, <code>nodout</code>, <code>elout</code> —— ASCII 报告</li>
+<li>识别：<code>d3plot</code> 文件名前缀 + 二进制 header</li>
+</ul>
+<h3 id="72工具">7.2 工具</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1</td>
+<td>文件名前缀检测</td>
+</tr>
+<tr>
+<td>T2-T3</td>
+<td><code>vtkmodules.vtkIOLSDyna.vtkLSDynaReader</code></td>
+</tr>
+<tr>
+<td>T4</td>
+<td>同上</td>
+</tr>
+<tr>
+<td>T6</td>
+<td>同上 → VTU</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">vtkmodules.vtkIOLSDyna</span><span class="w"> </span><span class="kn">import</span> <span class="n">vtkLSDynaReader</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">vtkLSDynaReader</span><span class="p">()</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">SetFileName</span><span class="p">(</span><span class="s2">&quot;d3plot&quot;</span><span class="p">)</span>  <span class="c1"># 自动 stitch d3plot01, d3plot02, ...</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">UpdateInformation</span><span class="p">()</span>
+<span class="n">times</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">GetTimeValues</span><span class="p">()</span>
+</code></pre></div>
+
+<h3 id="73信息族">7.3 信息族</h3>
+<h4 id="族A网格-3">族 A — 网格</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>n_nodes</code></td>
+<td>3</td>
+<td>d3plot header</td>
+</tr>
+<tr>
+<td><code>n_solid_elements</code>, <code>n_shell_elements</code>, <code>n_beam_elements</code>, <code>n_thick_shells</code></td>
+<td>3</td>
+<td>d3plot header</td>
+</tr>
+<tr>
+<td><code>parts</code> (id, name, material)</td>
+<td>2-3</td>
+<td>d3plot ID + .k 文件 <code>*PART</code></td>
+</tr>
+<tr>
+<td><code>bounding_box</code></td>
+<td>4</td>
+<td>VTK</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族B物理场-3">族 B — 物理场</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nodal_variables</code> (displacement / velocity / acceleration)</td>
+<td>2</td>
+<td>d3plot header flags</td>
+</tr>
+<tr>
+<td><code>element_variables</code> (stress / strain / pressure / SDV)</td>
+<td>2</td>
+<td>d3plot header flags</td>
+</tr>
+<tr>
+<td><code>damage_failure</code></td>
+<td>2</td>
+<td>d3plot 扩展 flags</td>
+</tr>
+<tr>
+<td><code>variable_ranges</code></td>
+<td>4</td>
+<td>VTK</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族C求解器物理设置-3">族 C — 求解器/物理设置</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>solver_type</code> (explicit / implicit)</td>
+<td>3</td>
+<td><code>.k</code> <code>*CONTROL_SOLUTION</code></td>
+</tr>
+<tr>
+<td><code>time_step_control</code></td>
+<td>3</td>
+<td><code>.k</code> <code>*CONTROL_TIMESTEP</code></td>
+</tr>
+<tr>
+<td><code>materials</code> (per part)</td>
+<td>3</td>
+<td><code>.k</code> <code>*MAT_*</code></td>
+</tr>
+<tr>
+<td><code>contact_definitions</code></td>
+<td>3</td>
+<td><code>.k</code> <code>*CONTACT_*</code></td>
+</tr>
+<tr>
+<td><code>boundary_conditions</code></td>
+<td>3</td>
+<td><code>.k</code> <code>*BOUNDARY_*</code></td>
+</tr>
+<tr>
+<td><code>loads</code></td>
+<td>3</td>
+<td><code>.k</code> <code>*LOAD_*</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="族E运行状态-3">族 E — 运行状态</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>n_cycles</code> (时间步数)</td>
+<td>2</td>
+<td>d3plot 状态数</td>
+</tr>
+<tr>
+<td><code>final_time</code></td>
+<td>2</td>
+<td>最后 state 的 time</td>
+</tr>
+<tr>
+<td><code>cpu_time</code></td>
+<td>4</td>
+<td><code>d3hsp</code> 文本</td>
+</tr>
+<tr>
+<td><code>energy_balance</code> (kinetic, internal, total)</td>
+<td>4</td>
+<td><code>glstat</code> ASCII</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族F后处理-2">族 F — 后处理</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nodal_history</code> (specific nodes)</td>
+<td>4</td>
+<td><code>nodout</code> ASCII / <code>binout</code></td>
+</tr>
+<tr>
+<td><code>element_history</code></td>
+<td>4</td>
+<td><code>elout</code> / <code>binout</code></td>
+</tr>
+<tr>
+<td><code>contact_force_history</code></td>
+<td>4</td>
+<td><code>rcforc</code> ASCII</td>
+</tr>
+<tr>
+<td><code>material_summary</code></td>
+<td>4</td>
+<td><code>matsum</code> ASCII</td>
+</tr>
+</tbody>
+</table>
+<h3 id="74已知quirks">7.4 已知 quirks</h3>
+<ol>
+<li><strong>d3plot 是分布式的</strong> —— <code>d3plot</code>, <code>d3plot01</code>, <code>d3plot02</code>, ... vtkLSDynaReader 自动 stitch，但要点对入口文件</li>
+<li><strong>大变形</strong> —— 节点位移会让 bounding_box 在不同时间步差很多</li>
+<li><strong>状态保存频率不均</strong> —— <code>*DATABASE_BINARY_D3PLOT</code> 控制写出频率</li>
+<li><strong>MPP vs SMP</strong> —— 并行版本输出格式略有差异</li>
+<li><strong><code>.k</code> keyword 文件大小写敏感</strong> —— <code>*MAT_ELASTIC</code> vs <code>*mat_elastic</code> 都接受但社区习惯大写</li>
+<li><strong>Include 文件链</strong> —— <code>*INCLUDE</code> 可能引用十几个其他 .k 文件，需要递归解析</li>
+<li><strong>SDV (state variable)</strong> —— 用户自定义状态变量，名字 SDV1/SDV2/... 不语义化</li>
+</ol>
+<h3 id="75Tier覆盖总览">7.5 Tier 覆盖总览</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1-T4</td>
+<td>✅ Phase 2</td>
+</tr>
+<tr>
+<td>T5</td>
+<td>⚠️ Phase 2（结构动力学 QOI：max stress / energy balance）</td>
+</tr>
+<tr>
+<td>T6</td>
+<td>✅ Phase 2</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8STARCCM+">8. STAR-CCM+</h2>
+<h3 id="81格式特征">8.1 格式特征</h3>
+<ul>
+<li><strong><code>.sim</code></strong> —— 完全封闭的二进制项目文件（含 mesh + setup + 结果一体）</li>
+<li>没有公开规格，<strong>没有任何第三方 reader</strong></li>
+</ul>
+<h3 id="82工具">8.2 工具</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1</td>
+<td>后缀名 + 文件大小启发</td>
+</tr>
+<tr>
+<td>T2+</td>
+<td>🔧 <strong>必须用户预导出</strong></td>
+</tr>
+</tbody>
+</table>
+<p>预导出选项：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// 用户在 STAR-CCM+ 里跑 macro，导出到中性格式</span>
+<span class="c1">// 选项 1: 导出 EnSight Gold</span>
+<span class="n">sim</span><span class="p">.</span><span class="na">exportEnsightGold</span><span class="p">(</span><span class="s">&quot;output_dir&quot;</span><span class="p">);</span>
+<span class="c1">// 选项 2: 导出 CGNS</span>
+<span class="n">sim</span><span class="p">.</span><span class="na">exportCGNS</span><span class="p">(</span><span class="s">&quot;output.cgns&quot;</span><span class="p">);</span>
+<span class="c1">// 选项 3: 导出 CSV reports</span>
+<span class="n">report</span><span class="p">.</span><span class="na">export</span><span class="p">(</span><span class="s">&quot;report.csv&quot;</span><span class="p">);</span>
+</code></pre></div>
+
+<p>预导出后，sim-parse <strong>走对应的中性格式 parser</strong>（EnSight / CGNS / CSV）。</p>
+<h3 id="83信息族">8.3 信息族</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>is_starccm_sim</code></td>
+<td>1</td>
+<td>后缀 <code>.sim</code></td>
+<td>✅（仅识别）</td>
+</tr>
+<tr>
+<td><code>file_size</code>, <code>mtime</code></td>
+<td>1</td>
+<td>filesystem</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>其他字段</td>
+<td>2+</td>
+<td><strong>需用户预导出</strong></td>
+<td>🔧</td>
+</tr>
+</tbody>
+</table>
+<h3 id="84已知quirks">8.4 已知 quirks</h3>
+<ol>
+<li><strong>完全封闭</strong> —— Siemens 不公开 .sim 格式</li>
+<li><strong>必须 STAR-CCM+ 在场</strong> —— 没有 STAR-CCM+ 安装就不能解析</li>
+<li><strong>macro 导出是用户责任</strong> —— sim-parse 不能自动调用 STAR-CCM+</li>
+</ol>
+<h3 id="85Tier覆盖总览">8.5 Tier 覆盖总览</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>状态</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1</td>
+<td>✅ 仅识别</td>
+<td>Phase 1 也能加（无成本）</td>
+</tr>
+<tr>
+<td>T2-T6</td>
+<td>❌</td>
+<td>用户预导出后走 EnSight/CGNS 路径</td>
+</tr>
+</tbody>
+</table>
+<h3 id="86推荐文档输出给用户">8.6 推荐文档输出（给用户）</h3>
+<p>sim-parse 遇到 .sim 文件应输出明确指引：</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;starccm_sim&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;supported&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;STAR-CCM+ .sim is closed format; no reader available&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;recommended_action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Export from STAR-CCM+ to EnSight Gold or CGNS using a Java macro, then re-ingest the exported folder.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;macro_template_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;see sim-parse/docs/starccm_export_macro.md&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="9Abaqus">9. Abaqus</h2>
+<h3 id="91格式特征">9.1 格式特征</h3>
+<h4 id="输入卡文本可读">输入卡（文本，可读）</h4>
+<ul>
+<li><strong><code>.inp</code></strong> —— Abaqus keyword 格式</li>
+<li>周边：<code>.cae</code>（项目，binary，CAE 内部）</li>
+</ul>
+<h4 id="结果文件">结果文件</h4>
+<ul>
+<li><strong><code>.odb</code></strong> —— 主结果（封闭二进制）</li>
+<li><strong><code>.dat</code></strong> —— 文本输出（节点/单元历程，partial）</li>
+<li><strong><code>.msg</code></strong> —— 求解器消息（文本）</li>
+<li><strong><code>.sta</code></strong> —— 状态/收敛历史（文本）</li>
+<li><strong><code>.fil</code></strong> —— legacy 格式（文本/二进制混合）</li>
+<li><strong><code>.log</code></strong> —— 控制台日志</li>
+</ul>
+<h3 id="92工具">9.2 工具</h3>
+<table>
+<thead>
+<tr>
+<th>数据源</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.inp</code></td>
+<td>自写 Keyword parser（文本）</td>
+</tr>
+<tr>
+<td><code>.dat</code> / <code>.msg</code> / <code>.sta</code> / <code>.log</code></td>
+<td>文本 + regex</td>
+</tr>
+<tr>
+<td><code>.odb</code></td>
+<td>🔧 <strong>VTK 没有 reader</strong>，三选一：<br>- <code>odbAccess</code>（Abaqus 自带 Python，需 <code>abaqus python</code> 调用）<br>- <code>odb2vtk</code>（社区，依赖 Abaqus 安装）<br>- 用户预导出</td>
+</tr>
+<tr>
+<td><code>.fil</code></td>
+<td>老式 ASCII 解析（已弃用，不推荐）</td>
+</tr>
+</tbody>
+</table>
+<p>VTK 没有 vtkAbaqusReader（实测验证，见 design.md §17）。</p>
+<h3 id="93信息族">9.3 信息族</h3>
+<h4 id="来自inp无需Abaqus">来自 <code>.inp</code>（无需 Abaqus）</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>analysis_type</code> (Static / Dynamic / Modal / Heat Transfer)</td>
+<td>3</td>
+<td><code>*STEP</code> 子卡（<code>*STATIC</code>/<code>*DYNAMIC EXPLICIT</code>/...）</td>
+</tr>
+<tr>
+<td><code>parts</code></td>
+<td>3</td>
+<td><code>*PART</code> 块</td>
+</tr>
+<tr>
+<td><code>assembly</code></td>
+<td>3</td>
+<td><code>*ASSEMBLY</code> 块</td>
+</tr>
+<tr>
+<td><code>materials</code> (elastic / plastic / hyperelastic / orthotropic)</td>
+<td>3</td>
+<td><code>*MATERIAL</code> + 子卡</td>
+</tr>
+<tr>
+<td><code>sections</code> (solid / shell / beam)</td>
+<td>3</td>
+<td><code>*SOLID SECTION</code> 等</td>
+</tr>
+<tr>
+<td><code>boundary_conditions</code></td>
+<td>3</td>
+<td><code>*BOUNDARY</code></td>
+</tr>
+<tr>
+<td><code>loads</code></td>
+<td>3</td>
+<td><code>*CLOAD</code>, <code>*DLOAD</code>, <code>*DSLOAD</code>, <code>*TEMPERATURE</code></td>
+</tr>
+<tr>
+<td><code>interactions</code> (contact / tie)</td>
+<td>3</td>
+<td><code>*CONTACT PAIR</code>, <code>*TIE</code></td>
+</tr>
+<tr>
+<td><code>output_requests</code></td>
+<td>3</td>
+<td><code>*OUTPUT</code>, <code>*ELEMENT OUTPUT</code>, <code>*NODE OUTPUT</code></td>
+</tr>
+<tr>
+<td><code>node_count</code></td>
+<td>3</td>
+<td><code>*NODE</code> 块计数</td>
+</tr>
+<tr>
+<td><code>element_count</code></td>
+<td>3</td>
+<td><code>*ELEMENT</code> 块计数</td>
+</tr>
+<tr>
+<td><code>element_types</code></td>
+<td>3</td>
+<td><code>*ELEMENT, TYPE=...</code> 标签</td>
+</tr>
+</tbody>
+</table>
+<h4 id="来自datstamsg无需Abaqus">来自 <code>.dat</code> / <code>.sta</code> / <code>.msg</code>（无需 Abaqus）</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>step_summary</code></td>
+<td>3</td>
+<td><code>.sta</code> 每行一个增量</td>
+</tr>
+<tr>
+<td><code>convergence_history</code></td>
+<td>4</td>
+<td><code>.msg</code> 残差</td>
+</tr>
+<tr>
+<td><code>wall_clock_time</code></td>
+<td>4</td>
+<td><code>.dat</code> 末尾</td>
+</tr>
+<tr>
+<td><code>partial_results</code></td>
+<td>4</td>
+<td><code>.dat</code> 节点/单元历程（如 <code>*NODE PRINT</code> 启用了）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="来自odb需要Abaqus环境">来自 <code>.odb</code>（<strong>需要 Abaqus 环境</strong>）</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mesh_full</code></td>
+<td>6</td>
+<td><code>odbAccess</code></td>
+</tr>
+<tr>
+<td><code>field_outputs</code> (S/E/U/V/A)</td>
+<td>4-6</td>
+<td><code>odbAccess.frames[].fieldOutputs</code></td>
+</tr>
+<tr>
+<td><code>history_outputs</code> (per node/element)</td>
+<td>4</td>
+<td><code>odbAccess.steps[].historyRegions</code></td>
+</tr>
+<tr>
+<td><code>step_results</code></td>
+<td>3-4</td>
+<td><code>odbAccess.steps</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="94已知quirks">9.4 已知 quirks</h3>
+<ol>
+<li><strong><code>.odb</code> 完全封闭</strong> —— 必须有 Abaqus（哪怕是 Student Edition）才能读</li>
+<li><strong><code>odbAccess</code> 只在 <code>abaqus python</code> 内可用</strong> —— 不能 <code>pip install</code>，必须用 Abaqus 自带 Python，通常通过 subprocess 调用</li>
+<li><strong><code>abaqus python -c "from odbAccess import ..."</code></strong> —— 这条命令的脚本通常以 JSON 输出结果</li>
+<li><strong><code>*INCLUDE</code> 链</strong> —— <code>.inp</code> 可能 include 多个文件，递归解析</li>
+<li><strong><code>*PARAMETER</code></strong> —— 参数化输入卡，需要先求值</li>
+<li><strong>Nodes 和 Elements 编号</strong> —— 不连续是常态（用户可指定）</li>
+<li><strong>Step 概念</strong> —— 一个分析可有多个 step，每 step 有独立载荷/边界</li>
+<li><strong>大小写不敏感</strong> —— Abaqus keyword 大小写都接受，但社区习惯大写</li>
+<li><strong><code>.fil</code> 已弃用</strong> —— Abaqus 6.13+ 可能不再生成；不要依赖</li>
+<li><strong><code>.odb</code> 版本兼容性</strong> —— Abaqus 2024 写的 .odb 可能不能用 Abaqus 2018 的 odbAccess 读</li>
+</ol>
+<h3 id="95Tier覆盖总览">9.5 Tier 覆盖总览</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>状态</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1 Identify</td>
+<td>✅ Phase 3</td>
+<td>后缀</td>
+</tr>
+<tr>
+<td>T2 Inventory</td>
+<td>✅ Phase 3</td>
+<td><code>.inp</code> + 周边文件清单</td>
+</tr>
+<tr>
+<td>T3 Metadata</td>
+<td>✅ Phase 3</td>
+<td><code>.inp</code> keyword 解析 + <code>.sta</code>/<code>.msg</code></td>
+</tr>
+<tr>
+<td>T4 FieldStats</td>
+<td>❌ Phase 4</td>
+<td>需 odb2vtk 或 abaqus python subprocess</td>
+</tr>
+<tr>
+<td>T5 QOI</td>
+<td>⚠️ Phase 4</td>
+<td>部分来自 <code>.dat</code> 文本</td>
+</tr>
+<tr>
+<td>T6 FullData</td>
+<td>❌ Phase 4</td>
+<td>需 odb2vtk</td>
+</tr>
+</tbody>
+</table>
+<h3 id="96推荐策略Phase13">9.6 推荐策略（Phase 1-3）</h3>
+<div class="codehilite"><pre><span></span><code>用户给一个 Abaqus job 目录
+  ↓
+sim-parse Path A:
+  ├─ .inp 存在 → Tier 3 解析（设置、材料、BC、载荷）
+  ├─ .dat 存在 → Tier 3 部分（step summary）
+  ├─ .sta 存在 → Tier 4 部分（收敛历史）
+  ├─ .msg 存在 → Tier 4 部分（残差）
+  └─ .odb 存在 但 Phase 3 不读 →
+       输出：&quot;Abaqus .odb detected; full result extraction requires Abaqus environment.
+              Phase 4 will support via odb2vtk pre-conversion.&quot;
+</code></pre></div>
+
+<hr />
+<h2 id="10MAPDLANSYSMechanical">10. MAPDL / ANSYS Mechanical</h2>
+<h3 id="101格式特征">10.1 格式特征</h3>
+<h4 id="输入">输入</h4>
+<ul>
+<li><strong><code>.dat</code></strong> / <code>.inp</code> —— APDL 命令脚本（文本）</li>
+<li><strong><code>.mac</code></strong> —— APDL 宏（文本）</li>
+</ul>
+<h4 id="结果">结果</h4>
+<ul>
+<li><strong><code>.rst</code></strong> —— 结构结果（封闭二进制）</li>
+<li><strong><code>.rth</code></strong> —— 热结果</li>
+<li><strong><code>.rmg</code></strong> —— 电磁结果</li>
+<li><strong><code>.full</code></strong> —— 矩阵文件（瞬态/模态）</li>
+<li><strong><code>.mode</code></strong> —— 模态向量</li>
+<li><strong><code>.esav</code></strong> —— element save file</li>
+</ul>
+<h4 id="项目">项目</h4>
+<ul>
+<li><strong><code>.mechdat</code></strong> / <strong><code>.wbpz</code></strong> —— Workbench 项目（封闭）</li>
+<li><strong><code>.mechdb</code></strong> —— Mechanical 数据库</li>
+</ul>
+<h3 id="102工具">10.2 工具</h3>
+<table>
+<thead>
+<tr>
+<th>数据源</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.dat</code> / <code>.inp</code> (APDL)</td>
+<td>自写 APDL 文本 parser</td>
+</tr>
+<tr>
+<td><code>.rst</code> / <code>.rth</code></td>
+<td><strong>PyDPF</strong>（<code>ansys-dpf-core</code>），官方工具</td>
+</tr>
+<tr>
+<td><code>.full</code> / <code>.mode</code></td>
+<td>PyDPF</td>
+</tr>
+</tbody>
+</table>
+<p>VTK 无 ANSYS reader。PyDPF 是官方支持，但是<strong>额外大依赖</strong>（包括 DPF 服务器）。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 注意：不在 Phase 1-3 范围</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ansys.dpf</span><span class="w"> </span><span class="kn">import</span> <span class="n">core</span> <span class="k">as</span> <span class="n">dpf</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">dpf</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="s2">&quot;file.rst&quot;</span><span class="p">)</span>
+<span class="n">mesh</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">meshed_region</span>
+<span class="n">displacement</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">displacement</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+</code></pre></div>
+
+<h3 id="103信息族">10.3 信息族</h3>
+<h4 id="来自datinpAPDL">来自 <code>.dat</code> / <code>.inp</code> (APDL)</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>analysis_type</code></td>
+<td>3</td>
+<td><code>ANTYPE,...</code> 命令</td>
+</tr>
+<tr>
+<td><code>element_types</code></td>
+<td>3</td>
+<td><code>ET,...</code></td>
+</tr>
+<tr>
+<td><code>materials</code></td>
+<td>3</td>
+<td><code>MP,...</code>, <code>MPDATA,...</code></td>
+</tr>
+<tr>
+<td><code>keypoints</code>, <code>lines</code>, <code>areas</code>, <code>volumes</code></td>
+<td>3</td>
+<td><code>K,...</code>, <code>L,...</code>, <code>AL,...</code>, <code>VA,...</code></td>
+</tr>
+<tr>
+<td><code>boundary_conditions</code></td>
+<td>3</td>
+<td><code>D,...</code>, <code>F,...</code></td>
+</tr>
+<tr>
+<td><code>solution_settings</code></td>
+<td>3</td>
+<td><code>SOLU,...</code>, <code>SOLVE</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="来自rst需PyDPF">来自 <code>.rst</code>（需 PyDPF）</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>n_nodes</code>, <code>n_elements</code></td>
+<td>3</td>
+<td>header</td>
+</tr>
+<tr>
+<td><code>result_sets</code> (每个载荷步/子步)</td>
+<td>3</td>
+<td>DPF</td>
+</tr>
+<tr>
+<td><code>nodal_displacements</code>, <code>nodal_velocities</code>, <code>nodal_accelerations</code></td>
+<td>4-6</td>
+<td>DPF results</td>
+</tr>
+<tr>
+<td><code>stress_tensors</code>, <code>strain_tensors</code></td>
+<td>4-6</td>
+<td>DPF</td>
+</tr>
+<tr>
+<td><code>mode_frequencies</code> (modal analysis)</td>
+<td>3-4</td>
+<td>DPF</td>
+</tr>
+</tbody>
+</table>
+<h3 id="104已知quirks">10.4 已知 quirks</h3>
+<ol>
+<li><strong>APDL 命令格式</strong> —— 逗号分隔，缩写命令（<code>ET</code>, <code>MAT</code>, <code>ESEL</code>），需要查参考</li>
+<li><strong>载荷步/子步</strong> —— 跟 Abaqus 的 step 概念类似</li>
+<li><strong><code>.rst</code> 的版本</strong> —— 不同 ANSYS 版本写出的 .rst 不完全兼容</li>
+<li><strong>PyDPF 服务器</strong> —— 后台需要启动 DPF 服务器（自动），但容器化时要注意</li>
+<li><strong>Workbench 项目</strong> —— <code>.wbpz</code> 是 zip，里面打包多个 <code>.mechdat</code> + <code>.rst</code></li>
+</ol>
+<h3 id="105Tier覆盖总览">10.5 Tier 覆盖总览</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>状态</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1</td>
+<td>✅ Phase 3</td>
+<td>后缀</td>
+</tr>
+<tr>
+<td>T2-T3</td>
+<td>⚠️ Phase 3</td>
+<td>仅 APDL 文本输入卡</td>
+</tr>
+<tr>
+<td>T4-T6</td>
+<td>❌ Phase 4</td>
+<td>需 PyDPF</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11Tecplot">11. Tecplot</h2>
+<h3 id="111格式特征">11.1 格式特征</h3>
+<ul>
+<li><strong><code>.plt</code></strong> —— 二进制（Tecplot binary）</li>
+<li><strong><code>.dat</code></strong> / <code>.tec</code> —— ASCII（Tecplot ASCII）</li>
+<li>识别 plt：magic <code>#!TDV</code> (Version)</li>
+<li>Zone-based（多区数据）</li>
+</ul>
+<h3 id="112工具">11.2 工具</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1</td>
+<td>magic <code>#!TDV</code></td>
+</tr>
+<tr>
+<td>T2-T6</td>
+<td><code>vtkmodules.vtkIOGeometry.vtkTecplotReader</code>（binary）<br><code>vtkmodules.vtkIOTecplotTable.vtkTecplotTableReader</code>（ASCII）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="113信息族">11.3 信息族</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tecplot_version</code></td>
+<td>1</td>
+<td>magic 后字节（"#!TDV112"）</td>
+</tr>
+<tr>
+<td><code>zones</code> (name, type=ORDERED/FELINESEG/FETRIANGLE/.../FEPOLYGON, dimensions)</td>
+<td>2-3</td>
+<td>reader</td>
+</tr>
+<tr>
+<td><code>variables</code></td>
+<td>2</td>
+<td>header</td>
+</tr>
+<tr>
+<td><code>variable_ranges</code></td>
+<td>4</td>
+<td>VTK</td>
+</tr>
+<tr>
+<td><code>time_strands</code> (transient)</td>
+<td>2-3</td>
+<td>zone strand IDs</td>
+</tr>
+</tbody>
+</table>
+<h3 id="114已知quirks">11.4 已知 quirks</h3>
+<ol>
+<li><strong>多种内部 layout</strong> —— BLOCK vs POINT；ORDERED (IJK) vs Finite Element</li>
+<li><strong><code>.plt</code> 版本众多</strong> —— 75/96/101/102/107/111/112，每版略有差异</li>
+<li><strong>变量共享</strong> —— 多 zone 可共享某些变量，节省存储但解析需注意</li>
+</ol>
+<h3 id="115Tier覆盖总览">11.5 Tier 覆盖总览</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1-T6</td>
+<td>⚠️ Phase 3（VTK reader 覆盖度参差，复杂 case 可能不全）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="12EnSightGold">12. EnSight Gold</h2>
+<h3 id="121格式特征">12.1 格式特征</h3>
+<ul>
+<li>多文件格式：</li>
+<li><code>&lt;case&gt;.case</code> —— 主索引（ASCII）</li>
+<li><code>&lt;case&gt;.geo</code> 或 <code>&lt;case&gt;.geo.gz</code> —— 几何（ASCII 或 binary）</li>
+<li><code>&lt;case&gt;.&lt;var&gt;</code> 或 <code>&lt;case&gt;_&lt;step&gt;.&lt;var&gt;</code> —— 各变量分别一文件</li>
+<li>时间步可分别保存（time-step 友好）</li>
+<li>识别：<code>.case</code> 后缀 + 文件第一行 <code>FORMAT\ntype: ensight gold</code></li>
+</ul>
+<h3 id="122工具">12.2 工具</h3>
+<p><code>vtkmodules.vtkIOEnSight.vtkGenericEnSightReader</code></p>
+<h3 id="123信息族">12.3 信息族</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>parts</code> (per part: name, dimensions, n_nodes, n_elements)</td>
+<td>2-3</td>
+<td><code>.case</code> + <code>.geo</code> header</td>
+</tr>
+<tr>
+<td><code>variables</code> (per part)</td>
+<td>2</td>
+<td><code>.case</code> 中 VARIABLE block</td>
+</tr>
+<tr>
+<td><code>variable_centering</code> (per element / per node)</td>
+<td>3</td>
+<td><code>.case</code></td>
+</tr>
+<tr>
+<td><code>time_set</code> (n_steps, time_values)</td>
+<td>2</td>
+<td><code>.case</code> TIME block</td>
+</tr>
+<tr>
+<td><code>material_sets</code> (如有)</td>
+<td>3</td>
+<td><code>.case</code> MATERIAL block</td>
+</tr>
+<tr>
+<td><code>variable_ranges</code></td>
+<td>4</td>
+<td>VTK</td>
+</tr>
+</tbody>
+</table>
+<h3 id="124已知quirks">12.4 已知 quirks</h3>
+<ol>
+<li><strong>ASCII vs binary 同后缀</strong> —— 看 .case 里 <code>format</code> 标识或 .geo 第一行</li>
+<li><strong>transient 文件命名约定</strong> —— <code>&lt;case&gt;_&lt;step&gt;.&lt;var&gt;</code> 或 <code>&lt;case&gt;.&lt;var&gt;{以星号填充}</code></li>
+<li><strong>structured 和 unstructured 都支持</strong> —— 复杂的 hybrid 也行</li>
+</ol>
+<hr />
+<h2 id="13Plot3D">13. Plot3D</h2>
+<h3 id="131格式特征">13.1 格式特征</h3>
+<ul>
+<li>极简结构化网格格式</li>
+<li><strong><code>.xyz</code></strong> / <code>.x</code> —— 网格（IJK 坐标）</li>
+<li><strong><code>.q</code></strong> —— 流场解（5 个变量：rho, rho<em>u, rho</em>v, rho<em>w, rho</em>E）</li>
+<li><strong><code>.f</code></strong> —— 通用 function file（任意变量数）</li>
+<li>多 block 支持</li>
+<li>二进制 + ASCII 两种 + 单精度/双精度</li>
+</ul>
+<h3 id="132工具">13.2 工具</h3>
+<p><code>vtkmodules.vtkIOParallel.vtkMultiBlockPLOT3DReader</code></p>
+<h3 id="133信息族">13.3 信息族</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>n_blocks</code></td>
+<td>1</td>
+<td>header 第一个 int</td>
+</tr>
+<tr>
+<td><code>block_dimensions</code> (per block: I, J, K)</td>
+<td>2</td>
+<td>header</td>
+</tr>
+<tr>
+<td><code>n_variables</code> (.q 是 5；.f 可变)</td>
+<td>2</td>
+<td>header</td>
+</tr>
+<tr>
+<td><code>variables</code></td>
+<td>2</td>
+<td>必须用户告知（Plot3D 不存变量名）</td>
+</tr>
+<tr>
+<td><code>variable_ranges</code></td>
+<td>4</td>
+<td>VTK</td>
+</tr>
+</tbody>
+</table>
+<h3 id="134已知quirks">13.4 已知 quirks</h3>
+<ol>
+<li><strong>变量没名字</strong> —— Plot3D 是位置编码，变量含义靠约定</li>
+<li><strong>字节序敏感</strong> —— big-endian / little-endian 都见</li>
+<li><strong>iblank</strong> —— 可选的"网格点是否激活"标志，特别处理</li>
+</ol>
+<hr />
+<h2 id="14跨求解器QOI统一映射表">14. 跨求解器 QOI 统一映射表</h2>
+<p>把 §3-13 各求解器原生输出<strong>翻译成受控变量名</strong>，是 sim-parse Tier 5 的核心任务。下表是首批 QOI 的跨求解器映射：</p>
+<h3 id="141流体动力学">14.1 流体动力学</h3>
+<table>
+<thead>
+<tr>
+<th>受控变量名</th>
+<th>单位</th>
+<th>OpenFOAM</th>
+<th>Fluent</th>
+<th>CGNS</th>
+<th>Tecplot</th>
+<th>EnSight</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lift_coefficient</code></td>
+<td>1</td>
+<td><code>forces/forceCoeffs.dat:Cl[-1]</code></td>
+<td><code>report-cl.out:lift[-1]</code></td>
+<td><code>/CGNSBase/IntegralData/LiftCoeff</code></td>
+<td>用户 zone 变量</td>
+<td>用户变量</td>
+</tr>
+<tr>
+<td><code>drag_coefficient</code></td>
+<td>1</td>
+<td><code>forces/forceCoeffs.dat:Cd[-1]</code></td>
+<td><code>report-cd.out:drag[-1]</code></td>
+<td>同上</td>
+<td>同上</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>mean_outlet_velocity</code></td>
+<td>m/s</td>
+<td>outlet patch 上 <code>U</code> 加权平均</td>
+<td>outlet face zone 上 velocity-magnitude</td>
+<td>同上</td>
+<td>同上</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>pressure_drop</code></td>
+<td>Pa</td>
+<td>inlet <code>p</code> - outlet <code>p</code></td>
+<td>inlet-outlet 总压差</td>
+<td>同上</td>
+<td>同上</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>mass_flow_rate</code></td>
+<td>kg/s</td>
+<td>inlet ∫ ρU·n dA</td>
+<td>mass-flow report</td>
+<td>同上</td>
+<td>同上</td>
+<td>同上</td>
+</tr>
+</tbody>
+</table>
+<h3 id="142热">14.2 热</h3>
+<table>
+<thead>
+<tr>
+<th>受控变量名</th>
+<th>单位</th>
+<th>OpenFOAM</th>
+<th>Fluent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>max_temperature</code></td>
+<td>K</td>
+<td><code>T.internalField.max()</code></td>
+<td><code>temperature.max</code></td>
+</tr>
+<tr>
+<td><code>wall_heat_flux_total</code></td>
+<td>W</td>
+<td>wall patch ∫ q dA</td>
+<td>wall heat flux report</td>
+</tr>
+<tr>
+<td><code>nusselt_number</code></td>
+<td>1</td>
+<td>派生计算</td>
+<td>内置 report</td>
+</tr>
+</tbody>
+</table>
+<h3 id="143燃烧">14.3 燃烧</h3>
+<table>
+<thead>
+<tr>
+<th>受控变量名</th>
+<th>单位</th>
+<th>OpenFOAM</th>
+<th>Fluent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>max_heat_release_rate</code></td>
+<td>W/m³</td>
+<td><code>Qdot.internalField.max()</code></td>
+<td><code>heat-of-reaction.max</code></td>
+</tr>
+<tr>
+<td><code>ignition_delay</code></td>
+<td>s</td>
+<td><code>Qdot</code> 时序穿越阈值时刻</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>co_emission_index</code></td>
+<td>g/kg-fuel</td>
+<td>出口 CO 质量 / 入口燃料质量</td>
+<td>同上</td>
+</tr>
+</tbody>
+</table>
+<h3 id="144数值收敛">14.4 数值收敛</h3>
+<table>
+<thead>
+<tr>
+<th>受控变量名</th>
+<th>单位</th>
+<th>OpenFOAM</th>
+<th>Fluent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>convergence_orders_&lt;var&gt;</code></td>
+<td>1</td>
+<td>log 残差 log10(initial/final)</td>
+<td><code>.trn</code> 残差 log10</td>
+</tr>
+<tr>
+<td><code>is_converged</code></td>
+<td>bool</td>
+<td>残差末值 vs tolerance</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>courant_max</code></td>
+<td>1</td>
+<td>log 中 Courant 报告</td>
+<td>TUI 输出</td>
+</tr>
+</tbody>
+</table>
+<h3 id="145结构">14.5 结构</h3>
+<table>
+<thead>
+<tr>
+<th>受控变量名</th>
+<th>单位</th>
+<th>LS-DYNA</th>
+<th>Abaqus</th>
+<th>MAPDL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>max_von_mises_stress</code></td>
+<td>Pa</td>
+<td>d3plot stress.vonMises.max</td>
+<td><code>.odb</code> field S.MISES.max</td>
+<td><code>.rst</code> SEQV.max</td>
+</tr>
+<tr>
+<td><code>max_displacement</code></td>
+<td>m</td>
+<td>d3plot displacement.magnitude.max</td>
+<td>U.magnitude.max</td>
+<td>UMX.max</td>
+</tr>
+<tr>
+<td><code>total_kinetic_energy</code></td>
+<td>J</td>
+<td>glstat:KE</td>
+<td><code>.dat</code> ALLKE</td>
+<td>NKE</td>
+</tr>
+<tr>
+<td><code>mode_frequencies</code> (list)</td>
+<td>Hz</td>
+<td>N/A</td>
+<td><code>.odb</code> modal frequencies</td>
+<td><code>.rst</code> modal</td>
+</tr>
+</tbody>
+</table>
+<p>完整映射表会随 sim-parse 实现演进 —— 此表是 v0.1 起点。</p>
+<hr />
+<h2 id="15阶段交付路线图">15. 阶段交付路线图</h2>
+<table>
+<thead>
+<tr>
+<th>求解器</th>
+<th>Phase 1 (MVP)</th>
+<th>Phase 2 (4-6w)</th>
+<th>Phase 3 (弹性)</th>
+<th>Phase 4 (远期)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OpenFOAM</strong></td>
+<td>T1-T4 ✅</td>
+<td>T5-T6 ✅</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>HDF5 通用</strong></td>
+<td>T1-T2 ✅</td>
+<td>T3 ⚠️</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>CGNS</strong></td>
+<td>—</td>
+<td>T1-T6 ✅</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Fluent (.cas/.dat + .cas.h5)</strong></td>
+<td>—</td>
+<td>T1-T6 ✅</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>LS-DYNA</strong></td>
+<td>—</td>
+<td>T1-T6 ✅</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Tecplot</strong></td>
+<td>—</td>
+<td>—</td>
+<td>T1-T6 ⚠️</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>EnSight</strong></td>
+<td>—</td>
+<td>—</td>
+<td>T1-T6 ✅</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Plot3D</strong></td>
+<td>—</td>
+<td>—</td>
+<td>T1-T6 ✅</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Abaqus (.inp)</strong></td>
+<td>—</td>
+<td>—</td>
+<td>T1-T3 ✅</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Abaqus (.odb)</strong></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>T4-T6 🔧 odb2vtk</td>
+</tr>
+<tr>
+<td><strong>MAPDL/Mechanical</strong></td>
+<td>—</td>
+<td>—</td>
+<td>T1-T3 ⚠️ APDL only</td>
+<td>T4-T6 🔧 PyDPF</td>
+</tr>
+<tr>
+<td><strong>STAR-CCM+</strong></td>
+<td>—</td>
+<td>—</td>
+<td>T1 ✅ 仅识别</td>
+<td>永远 🔧（用户预导出）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="16迁移候选→simknowledge">16. 迁移候选 → sim-knowledge</h2>
+<p>本节标记<strong>本文档中哪些内容未来应该迁往 sim-knowledge 仓库</strong>（详见 <a href="design.md">design.md §2</a> 三轴架构）。当前阶段不动，等 sim-parse Phase 1 实现完成、sim-knowledge 仓库正式建立时执行迁移。</p>
+<h3 id="161迁移原则">16.1 迁移原则</h3>
+<table>
+<thead>
+<tr>
+<th>内容性质</th>
+<th>归属</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sim-parse 实现规格（Tier 覆盖、工具调用、API）</td>
+<td>sim-parse/docs/（留）</td>
+</tr>
+<tr>
+<td>求解器/格式的<strong>事实</strong>（不依赖 sim-parse 是否实现）</td>
+<td><strong>sim-knowledge</strong></td>
+</tr>
+<tr>
+<td>给 LLM 检索用的结构化素材</td>
+<td><strong>sim-knowledge</strong></td>
+</tr>
+<tr>
+<td>跨求解器物理映射（QOI、变量字典、单位）</td>
+<td><strong>sim-knowledge/physics/</strong></td>
+</tr>
+<tr>
+<td>单求解器格式约定、quirks、识别签名</td>
+<td><strong>sim-knowledge/formats/</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="162高优先级迁移项⭐">16.2 高优先级迁移项 ⭐</h3>
+<h4 id="1621各求解器quirks→simknowledgeformats&lt;name&gt;quirksyaml">16.2.1 各求解器 quirks → <code>sim-knowledge/formats/&lt;name&gt;/quirks.yaml</code></h4>
+<p>每节的 §X.4 "已知 quirks" 是<strong>最该挪的内容</strong> —— 这些"领域智慧"挪到结构化 YAML 后，Discovery Agent 和 Query Agent 才能精准检索。</p>
+<table>
+<thead>
+<tr>
+<th>本文档</th>
+<th>目标</th>
+<th>条目数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>§3.4 OpenFOAM quirks</td>
+<td><code>formats/openfoam/quirks.yaml</code></td>
+<td>10</td>
+</tr>
+<tr>
+<td>§4.4 Fluent quirks</td>
+<td><code>formats/fluent/quirks.yaml</code></td>
+<td>10</td>
+</tr>
+<tr>
+<td>§5.4 CGNS quirks</td>
+<td><code>formats/cgns/quirks.yaml</code></td>
+<td>4</td>
+</tr>
+<tr>
+<td>§6.5 HDF5 quirks</td>
+<td><code>formats/hdf5/quirks.yaml</code></td>
+<td>5</td>
+</tr>
+<tr>
+<td>§7.4 LS-DYNA quirks</td>
+<td><code>formats/lsdyna/quirks.yaml</code></td>
+<td>7</td>
+</tr>
+<tr>
+<td>§9.4 Abaqus quirks</td>
+<td><code>formats/abaqus/quirks.yaml</code></td>
+<td>10</td>
+</tr>
+<tr>
+<td>§10.4 MAPDL quirks</td>
+<td><code>formats/mapdl/quirks.yaml</code></td>
+<td>5</td>
+</tr>
+<tr>
+<td>§11.4 Tecplot quirks</td>
+<td><code>formats/tecplot/quirks.yaml</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td>§12.4 EnSight quirks</td>
+<td><code>formats/ensight/quirks.yaml</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td>§13.4 Plot3D quirks</td>
+<td><code>formats/plot3d/quirks.yaml</code></td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+<p>迁移示例（markdown → YAML）见 §16.6。</p>
+<h4 id="1622跨求解器QOI映射→simknowledgephysics&lt;domain&gt;variablesyaml">16.2.2 跨求解器 QOI 映射 → <code>sim-knowledge/physics/&lt;domain&gt;/variables.yaml</code></h4>
+<p>§14 整张表按物理域拆分迁移：</p>
+<table>
+<thead>
+<tr>
+<th>本文档</th>
+<th>目标</th>
+<th>受控变量数（v0.1）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>§14.1 流体动力学</td>
+<td><code>physics/fluid_dynamics/variables.yaml</code></td>
+<td>5</td>
+</tr>
+<tr>
+<td>§14.2 热</td>
+<td><code>physics/heat_transfer/variables.yaml</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td>§14.3 燃烧</td>
+<td><code>physics/combustion/variables.yaml</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td>§14.4 数值收敛</td>
+<td><code>physics/numerics/variables.yaml</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td>§14.5 结构</td>
+<td><code>physics/structural/variables.yaml</code></td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<h4 id="1623格式识别签名→simknowledgeformats&lt;name&gt;structureyaml">16.2.3 格式识别签名 → <code>sim-knowledge/formats/&lt;name&gt;/structure.yaml</code></h4>
+<p>每节 §X.1 "格式特征"中的<strong>识别部分</strong>（magic、文件签名、目录结构）是 Discovery Agent 识别陌生文件的核心依据。</p>
+<table>
+<thead>
+<tr>
+<th>本文档</th>
+<th>目标</th>
+<th>关键内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>§3.1 OpenFOAM</td>
+<td><code>formats/openfoam/structure.yaml</code></td>
+<td>目录式签名（system/+constant/）</td>
+</tr>
+<tr>
+<td>§4.1 Fluent</td>
+<td><code>formats/fluent/structure.yaml</code></td>
+<td>.cas/.dat 后缀 + CFF magic</td>
+</tr>
+<tr>
+<td>§5.1 CGNS</td>
+<td><code>formats/cgns/structure.yaml</code></td>
+<td>HDF5 magic + /CGNSBase_* group</td>
+</tr>
+<tr>
+<td>§6.1 HDF5 通用</td>
+<td><code>formats/hdf5/structure.yaml</code></td>
+<td>HDF5 magic + 通用约定</td>
+</tr>
+<tr>
+<td>§7.1 LS-DYNA</td>
+<td><code>formats/lsdyna/structure.yaml</code></td>
+<td>d3plot 文件名前缀</td>
+</tr>
+<tr>
+<td>§11.1 Tecplot</td>
+<td><code>formats/tecplot/structure.yaml</code></td>
+<td><code>#!TDV</code> magic</td>
+</tr>
+<tr>
+<td>§12.1 EnSight</td>
+<td><code>formats/ensight/structure.yaml</code></td>
+<td>.case 第一行格式</td>
+</tr>
+<tr>
+<td>§13.1 Plot3D</td>
+<td><code>formats/plot3d/structure.yaml</code></td>
+<td>.xyz/.q 配对</td>
+</tr>
+</tbody>
+</table>
+<h3 id="163双载体内容两边都保留CI检查同步">16.3 双载体内容（两边都保留，CI 检查同步）</h3>
+<p>下面这些内容<strong>同时</strong>作为 sim-parse 实现规格（markdown 叙事）和 sim-knowledge 检索素材（YAML 结构化）存在 —— 两边都需要，但要 CI 检查不漂移。</p>
+<table>
+<thead>
+<tr>
+<th>本文档</th>
+<th>双载体目标</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>各 §X.3 信息族表的"字段→来源"映射</td>
+<td><code>formats/&lt;name&gt;/extraction_map.yaml</code></td>
+</tr>
+<tr>
+<td>各 §X.1 中的"内部混合 / 编码 / 字节序"等格式细节</td>
+<td><code>formats/&lt;name&gt;/structure.yaml</code>（与识别签名同文件）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="164留在simparsedocsextractionreferencemd不迁移">16.4 留在 sim-parse/docs/extraction_reference.md（不迁移）</h3>
+<table>
+<thead>
+<tr>
+<th>内容</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>§1 文档目的与边界</td>
+<td>sim-parse 自身定位</td>
+</tr>
+<tr>
+<td>§2 通用约定（Tier / Path / 状态码）</td>
+<td>sim-parse 实现概念</td>
+</tr>
+<tr>
+<td>各 §X.2 工具（VTK 调用代码）</td>
+<td>sim-parse 实现细节</td>
+</tr>
+<tr>
+<td>各 §X.3 信息族表的 Tier 列、状态列</td>
+<td>sim-parse 实现进度</td>
+</tr>
+<tr>
+<td>各 §X.5 Tier 覆盖总览</td>
+<td>sim-parse 项目状态</td>
+</tr>
+<tr>
+<td>§15 阶段交付路线图</td>
+<td>sim-parse 项目计划</td>
+</tr>
+<tr>
+<td>§17 变更历史</td>
+<td>文档元数据</td>
+</tr>
+</tbody>
+</table>
+<h3 id="165目标simknowledge目录结构预览">16.5 目标 sim-knowledge 目录结构预览</h3>
+<p>迁移完成后，sim-knowledge 仓库会长这样：</p>
+<div class="codehilite"><pre><span></span><code>sim-knowledge/                                  (待建)
+├── formats/
+│   ├── openfoam/
+│   │   ├── structure.yaml          ← 来自本文档 §3.1
+│   │   ├── quirks.yaml             ← 来自 §3.4
+│   │   └── extraction_map.yaml     ← 来自 §3.3 字段→来源 列
+│   ├── fluent/
+│   │   ├── structure.yaml          ← §4.1
+│   │   ├── quirks.yaml             ← §4.4
+│   │   └── extraction_map.yaml     ← §4.3
+│   ├── cgns/
+│   │   ├── structure.yaml          ← §5.1
+│   │   ├── quirks.yaml             ← §5.4
+│   │   └── extraction_map.yaml     ← §5.3
+│   ├── hdf5/
+│   │   ├── structure.yaml          ← §6.1
+│   │   ├── quirks.yaml             ← §6.5
+│   │   └── playbooks/
+│   │       └── unknown_hdf5_inspection.yaml   (新增，给 Discovery Agent)
+│   ├── lsdyna/                     ← §7.x
+│   ├── abaqus/                     ← §9.x
+│   ├── mapdl/                      ← §10.x
+│   ├── tecplot/                    ← §11.x
+│   ├── ensight/                    ← §12.x
+│   ├── plot3d/                     ← §13.x
+│   ├── conventions/                (新增)
+│   │   ├── log_residual_patterns.yaml    (跨求解器 log 残差正则)
+│   │   ├── time_directory_patterns.yaml
+│   │   └── csv_report_patterns.yaml
+│   └── examples/                   (新增)
+│       └── successful_discoveries.json    (Discovery Agent few-shot)
+├── physics/
+│   ├── fluid_dynamics/
+│   │   ├── variables.yaml          ← 来自 §14.1
+│   │   ├── criteria.yaml           (新增：is_converged, has_recirculation 等)
+│   │   └── thresholds.yaml         (新增)
+│   ├── heat_transfer/
+│   │   ├── variables.yaml          ← §14.2
+│   │   ├── criteria.yaml
+│   │   └── thresholds.yaml
+│   ├── combustion/
+│   │   ├── variables.yaml          ← §14.3
+│   │   ├── criteria.yaml           (新增：is_extinguished, ignition_delay_methods)
+│   │   └── thresholds.yaml
+│   ├── numerics/
+│   │   ├── variables.yaml          ← §14.4
+│   │   └── criteria.yaml           (新增：is_diverged, courant_alarm)
+│   └── structural/
+│       ├── variables.yaml          ← §14.5
+│       └── criteria.yaml
+├── labeled_cases/                  (新增：人工标注真值，§11 design.md)
+│   ├── combustion_extinction/
+│   ├── convergence_failure/
+│   └── ...
+└── few_shot/
+    └── *.json
+</code></pre></div>
+
+<h3 id="166迁移示例markdown→YAML">16.6 迁移示例（markdown → YAML）</h3>
+<h4 id="例1OpenFOAMquirk迁移">例 1: OpenFOAM quirk 迁移</h4>
+<p><strong>本文档 §3.4 markdown 形态</strong>：</p>
+<blockquote>
+<ol>
+<li><strong><code>endTime=5000, deltaT=1</code> 不一定是物理时间</strong> —— LTS（局部时间步）求解器把 endTime 当迭代步数，路径名常含 <code>LTS</code> 字样。Tier 7 LLM 可推断；纯静态会误读为"5000 秒"</li>
+</ol>
+</blockquote>
+<p><strong>迁移后 <code>sim-knowledge/formats/openfoam/quirks.yaml</code> 形态</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">quirks</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lts_pseudo_time</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;LTS</span><span class="nv"> </span><span class="s">求解器</span><span class="nv"> </span><span class="s">endTime/deltaT</span><span class="nv"> </span><span class="s">是迭代步数不是物理时间&quot;</span>
+<span class="w">    </span><span class="nt">detect</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;controlDict::application</span><span class="nv"> </span><span class="s">matches</span><span class="nv"> </span><span class="s">&#39;*LTS&#39;&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;case_path</span><span class="nv"> </span><span class="s">contains</span><span class="nv"> </span><span class="s">&#39;LTS&#39;&quot;</span>
+<span class="w">    </span><span class="nt">affects</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">        </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">time_control.semantics</span>
+<span class="w">    </span><span class="nt">interpretation</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;treat</span><span class="nv"> </span><span class="s">endTime</span><span class="nv"> </span><span class="s">as</span><span class="nv"> </span><span class="s">iteration</span><span class="nv"> </span><span class="s">count,</span><span class="nv"> </span><span class="s">not</span><span class="nv"> </span><span class="s">seconds&quot;</span>
+<span class="w">    </span><span class="nt">confidence_when_matched</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MED</span>
+<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">case_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tutorials/combustion/reactingFoam/RAS/DLR_A_LTS&quot;</span>
+<span class="w">        </span><span class="nt">observed</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">endTime</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<span class="w">          </span><span class="nt">deltaT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">actual_meaning</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;5000</span><span class="nv"> </span><span class="s">LTS</span><span class="nv"> </span><span class="s">iterations&quot;</span>
+<span class="w">    </span><span class="nt">references</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;openfoam.com/documentation/lts&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<h4 id="例2QOI映射迁移">例 2: QOI 映射迁移</h4>
+<p><strong>本文档 §14.1 markdown 形态</strong>：</p>
+<blockquote>
+<p>| <code>lift_coefficient</code> | 1 | <code>forces/forceCoeffs.dat:Cl[-1]</code> | <code>report-cl.out:lift[-1]</code> | <code>/CGNSBase/IntegralData/LiftCoeff</code> |</p>
+</blockquote>
+<p><strong>迁移后 <code>sim-knowledge/physics/fluid_dynamics/variables.yaml</code> 形态</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">lift_coefficient</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;升力系数（无量纲）&quot;</span>
+<span class="w">  </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
+<span class="w">  </span><span class="nt">applicable_when</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">has_solid_walls</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">flow_type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;incompressible&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;compressible&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">openfoam</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postProcessing/forces*/&lt;time&gt;/forceCoeffs.dat&quot;</span>
+<span class="w">        </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Cl&quot;</span>
+<span class="w">        </span><span class="nt">aggregator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;last&quot;</span>
+<span class="w">        </span><span class="nt">confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">    </span><span class="nt">fluent</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;report-cl*.out&quot;</span>
+<span class="w">        </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lift&quot;</span>
+<span class="w">        </span><span class="nt">aggregator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;last&quot;</span>
+<span class="w">        </span><span class="nt">confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">    </span><span class="nt">cgns</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/CGNSBase_*/IntegralData/LiftCoeff&quot;</span>
+<span class="w">        </span><span class="nt">confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIGH</span>
+<span class="w">    </span><span class="nt">starccm_exported_csv</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;report_*.csv&quot;</span>
+<span class="w">        </span><span class="nt">column_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;(?i)lift.*coeff&quot;</span>
+<span class="w">        </span><span class="nt">aggregator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;last&quot;</span>
+<span class="w">        </span><span class="nt">confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MED</span>
+</code></pre></div>
+
+<h3 id="167迁移时机">16.7 迁移时机</h3>
+<p>不要现在就拆，理由是 sim-knowledge 仓库还没建。建议节奏：</p>
+<table>
+<thead>
+<tr>
+<th>时机</th>
+<th>动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>当前</strong>（design 阶段）</td>
+<td>保留 extraction_reference.md 完整版作为单一参考</td>
+</tr>
+<tr>
+<td><strong>Phase 1 完成后</strong></td>
+<td>建 sim-knowledge 仓库雏形，从本文档抽种子（Silver 档，LLM 起草 + 人审）</td>
+</tr>
+<tr>
+<td><strong>Phase 2</strong></td>
+<td>完成 §16.2 高优先级迁移；CI 检查双载体一致性</td>
+</tr>
+<tr>
+<td><strong>Phase 3+</strong></td>
+<td>拓展 sim-knowledge：新增 criteria.yaml / playbooks / labeled_cases，超出本文档范围的内容</td>
+</tr>
+</tbody>
+</table>
+<h3 id="168标记约定未来用">16.8 标记约定（未来用）</h3>
+<p>将来在迁移时，可以在本文档对应位置加 HTML 注释标记：</p>
+<div class="codehilite"><pre><span></span><code>&lt;!-- TO_KNOWLEDGE: sim-knowledge/formats/openfoam/quirks.yaml --&gt;
+<span class="k">1.</span> <span class="gs">**求解器主 log 不在顶层**</span> ...
+
+&lt;!-- TO_KNOWLEDGE: sim-knowledge/physics/fluid_dynamics/variables.yaml --&gt;
+| <span class="sb">`lift_coefficient`</span> | 1 | ... |
+</code></pre></div>
+
+<p>这种注释在渲染中不可见，但 grep 友好，便于自动化迁移工具识别。<strong>当前不加</strong>，等开始迁移时再批量加。</p>
+<hr />
+<h2 id="17变更历史">17. 变更历史</h2>
+<ul>
+<li><strong>v0.1</strong> — 初版，覆盖 OpenFOAM / Fluent / CGNS / HDF5 通用 / LS-DYNA / STAR-CCM+ / Abaqus / MAPDL / Tecplot / EnSight / Plot3D 共 11 种求解器/格式；含跨求解器 QOI 映射首批；含阶段路线图</li>
+<li><strong>v0.2</strong> — 新增 §16 迁移候选清单：明确 quirks / QOI 映射 / 格式识别签名 三类高优先级迁移项；列出双载体内容；预览目标 sim-knowledge 目录结构；含 markdown→YAML 迁移示例</li>
+<li><strong>v0.3</strong> — 实施回填：补 OpenFOAM quirk 11-14（VTK stderr 警告、boundary patch 数差异、endTime 类型、LTS pseudo-time 歧义）；从 sim-parse Phase 1 实施过程中归纳的真实坑</li>
+</ul>
+  </main>
+</div>
+</body>
+</html>

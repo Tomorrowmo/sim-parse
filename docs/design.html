@@ -1,0 +1,2839 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>sim-parse 设计方案</title>
+<style>
+:root {
+    --bg:#0d1117; --panel:#161b22; --panel-2:#1f2937;
+    --text:#e6edf3; --muted:#8b949e; --link:#58a6ff;
+    --border:#30363d; --accent:#7ee787;
+    --code-bg:#0b0f14;
+}
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:var(--bg); color:var(--text); }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+        "Noto Sans CJK SC", Roboto, Helvetica, Arial, sans-serif;
+    line-height:1.75; font-size:16px;
+}
+.layout { display:flex; max-width:1400px; margin:0 auto; }
+aside.toc {
+    position:sticky; top:0; align-self:flex-start;
+    width:280px; height:100vh; overflow-y:auto;
+    padding:24px 16px; border-right:1px solid var(--border);
+    background:var(--panel); font-size:14px;
+}
+aside.toc h2 { font-size:13px; color:var(--muted); text-transform:uppercase;
+    letter-spacing:1px; margin:0 0 12px; }
+aside.toc ul { list-style:none; padding-left:12px; margin:0; }
+aside.toc > ul { padding-left:0; }
+aside.toc a { color:var(--text); text-decoration:none; display:block;
+    padding:4px 8px; border-radius:6px; }
+aside.toc a:hover { background:var(--panel-2); color:var(--link); }
+main { flex:1; min-width:0; padding:48px 56px; max-width:960px; }
+@media (max-width: 900px) {
+    .layout { flex-direction:column; }
+    aside.toc { position:static; width:100%; height:auto; max-height:none;
+        border-right:none; border-bottom:1px solid var(--border); }
+    main { padding:24px 16px; }
+}
+h1, h2, h3, h4 { color:var(--text); border-bottom:1px solid var(--border);
+    padding-bottom:.3em; margin-top:2em; }
+h1 { font-size:2em; }
+h2 { font-size:1.6em; }
+h3 { font-size:1.3em; border-bottom:none; }
+h4 { font-size:1.1em; border-bottom:none; color:var(--accent); }
+a { color:var(--link); text-decoration:none; }
+a:hover { text-decoration:underline; }
+blockquote { border-left:4px solid var(--accent);
+    background:var(--panel); margin:16px 0; padding:8px 16px;
+    color:var(--muted); border-radius:0 6px 6px 0; }
+blockquote p { margin:.5em 0; }
+table { border-collapse:collapse; width:100%; margin:16px 0;
+    background:var(--panel); border-radius:6px; overflow:hidden; display:block;
+    overflow-x:auto; }
+th, td { border:1px solid var(--border); padding:8px 12px; text-align:left;
+    vertical-align:top; }
+th { background:var(--panel-2); color:var(--accent); font-weight:600; }
+tr:nth-child(even) td { background:#11161d; }
+code { font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas,
+    "Cascadia Code", monospace; font-size:.92em;
+    background:var(--code-bg); padding:2px 6px; border-radius:4px;
+    border:1px solid var(--border); }
+pre { background:var(--code-bg); border:1px solid var(--border);
+    border-radius:8px; padding:16px; overflow-x:auto;
+    font-size:13px; line-height:1.55; }
+pre code { background:transparent; border:none; padding:0; font-size:inherit; }
+hr { border:none; border-top:1px solid var(--border); margin:32px 0; }
+.codehilite { background:var(--code-bg); border:1px solid var(--border);
+    border-radius:8px; margin:16px 0; }
+.codehilite pre { background:transparent; border:none; margin:0; }
+h1, h2, h3, h4 { scroll-margin-top:16px; }
+.brand { padding:12px 56px; background:var(--panel);
+    border-bottom:1px solid var(--border); color:var(--muted);
+    font-size:13px; }
+.brand strong { color:var(--accent); }
+@media (max-width: 900px) { .brand { padding:12px 16px; } }
+pre { line-height: 125%; }
+td.linenos .normal { color: #6e7681; background-color: #0d1117; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #6e7681; background-color: #0d1117; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #6e7681 }
+.codehilite { background: #0d1117; color: #E6EDF3 }
+.codehilite .c { color: #8B949E; font-style: italic } /* Comment */
+.codehilite .err { color: #F85149 } /* Error */
+.codehilite .esc { color: #E6EDF3 } /* Escape */
+.codehilite .g { color: #E6EDF3 } /* Generic */
+.codehilite .k { color: #FF7B72 } /* Keyword */
+.codehilite .l { color: #A5D6FF } /* Literal */
+.codehilite .n { color: #E6EDF3 } /* Name */
+.codehilite .o { color: #FF7B72; font-weight: bold } /* Operator */
+.codehilite .x { color: #E6EDF3 } /* Other */
+.codehilite .p { color: #E6EDF3 } /* Punctuation */
+.codehilite .ch { color: #8B949E; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #8B949E; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #8B949E; font-weight: bold; font-style: italic } /* Comment.Preproc */
+.codehilite .cpf { color: #8B949E; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #8B949E; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #8B949E; font-weight: bold; font-style: italic } /* Comment.Special */
+.codehilite .gd { color: #FFA198; background-color: #490202 } /* Generic.Deleted */
+.codehilite .ge { color: #E6EDF3; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #E6EDF3; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #FFA198 } /* Generic.Error */
+.codehilite .gh { color: #79C0FF; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #56D364; background-color: #0F5323 } /* Generic.Inserted */
+.codehilite .go { color: #8B949E } /* Generic.Output */
+.codehilite .gp { color: #8B949E } /* Generic.Prompt */
+.codehilite .gs { color: #E6EDF3; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #79C0FF } /* Generic.Subheading */
+.codehilite .gt { color: #FF7B72 } /* Generic.Traceback */
+.codehilite .g-Underline { color: #E6EDF3; text-decoration: underline } /* Generic.Underline */
+.codehilite .kc { color: #79C0FF } /* Keyword.Constant */
+.codehilite .kd { color: #FF7B72 } /* Keyword.Declaration */
+.codehilite .kn { color: #FF7B72 } /* Keyword.Namespace */
+.codehilite .kp { color: #79C0FF } /* Keyword.Pseudo */
+.codehilite .kr { color: #FF7B72 } /* Keyword.Reserved */
+.codehilite .kt { color: #FF7B72 } /* Keyword.Type */
+.codehilite .ld { color: #79C0FF } /* Literal.Date */
+.codehilite .m { color: #A5D6FF } /* Literal.Number */
+.codehilite .s { color: #A5D6FF } /* Literal.String */
+.codehilite .na { color: #E6EDF3 } /* Name.Attribute */
+.codehilite .nb { color: #E6EDF3 } /* Name.Builtin */
+.codehilite .nc { color: #F0883E; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #79C0FF; font-weight: bold } /* Name.Constant */
+.codehilite .nd { color: #D2A8FF; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #FFA657 } /* Name.Entity */
+.codehilite .ne { color: #F0883E; font-weight: bold } /* Name.Exception */
+.codehilite .nf { color: #D2A8FF; font-weight: bold } /* Name.Function */
+.codehilite .nl { color: #79C0FF; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #FF7B72 } /* Name.Namespace */
+.codehilite .nx { color: #E6EDF3 } /* Name.Other */
+.codehilite .py { color: #79C0FF } /* Name.Property */
+.codehilite .nt { color: #7EE787 } /* Name.Tag */
+.codehilite .nv { color: #79C0FF } /* Name.Variable */
+.codehilite .ow { color: #FF7B72; font-weight: bold } /* Operator.Word */
+.codehilite .pm { color: #E6EDF3 } /* Punctuation.Marker */
+.codehilite .w { color: #6E7681 } /* Text.Whitespace */
+.codehilite .mb { color: #A5D6FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #A5D6FF } /* Literal.Number.Float */
+.codehilite .mh { color: #A5D6FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #A5D6FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #A5D6FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #79C0FF } /* Literal.String.Affix */
+.codehilite .sb { color: #A5D6FF } /* Literal.String.Backtick */
+.codehilite .sc { color: #A5D6FF } /* Literal.String.Char */
+.codehilite .dl { color: #79C0FF } /* Literal.String.Delimiter */
+.codehilite .sd { color: #A5D6FF } /* Literal.String.Doc */
+.codehilite .s2 { color: #A5D6FF } /* Literal.String.Double */
+.codehilite .se { color: #79C0FF } /* Literal.String.Escape */
+.codehilite .sh { color: #79C0FF } /* Literal.String.Heredoc */
+.codehilite .si { color: #A5D6FF } /* Literal.String.Interpol */
+.codehilite .sx { color: #A5D6FF } /* Literal.String.Other */
+.codehilite .sr { color: #79C0FF } /* Literal.String.Regex */
+.codehilite .s1 { color: #A5D6FF } /* Literal.String.Single */
+.codehilite .ss { color: #A5D6FF } /* Literal.String.Symbol */
+.codehilite .bp { color: #E6EDF3 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #D2A8FF; font-weight: bold } /* Name.Function.Magic */
+.codehilite .vc { color: #79C0FF } /* Name.Variable.Class */
+.codehilite .vg { color: #79C0FF } /* Name.Variable.Global */
+.codehilite .vi { color: #79C0FF } /* Name.Variable.Instance */
+.codehilite .vm { color: #79C0FF } /* Name.Variable.Magic */
+.codehilite .il { color: #A5D6FF } /* Literal.Number.Integer.Long */</style>
+</head>
+<body>
+<div class="brand">📘 <strong>sim-parse 设计方案</strong> · 单页静态文档</div>
+<div class="layout">
+  <aside class="toc">
+    <h2>目录</h2>
+    <ul>
+<li><a href="#目录">目录</a></li>
+<li><a href="#新读者基础概念速览FAQ">新读者：基础概念速览（FAQ）</a></li>
+<ul>
+<li><a href="#Q1Tier是什么意思">Q1. "Tier" 是什么意思？</a></li>
+<li><a href="#Q2Dispatcher是不是级联">Q2. "Dispatcher" 是不是"级联"？</a></li>
+<li><a href="#Q3coresolversgenericdiscoveryadapterscli是平级的吗">Q3. core / solvers / generic / discovery / adapters / cli 是平级的吗？</a></li>
+<li><a href="#Q4simknowledge是什么">Q4. sim-knowledge 是什么？</a></li>
+<li><a href="#Q5为什么labeledcase针对具体DLRAcavitynormal">Q5. 为什么 labeled_case 针对具体 DLR_A_cavity_normal？</a></li>
+</ul>
+<li><a href="#1项目概述">1. 项目概述</a></li>
+<li><a href="#2三个动作×三个知识库核心架构">2. 三个动作 × 三个知识库（核心架构）</a></li>
+<ul>
+<li><a href="#21三动作三仓总表">2.1 三动作三仓总表</a></li>
+<li><a href="#22三仓关系图layeredview">2.2 三仓关系图（layered view）</a></li>
+<li><a href="#23simparse在三轴中的位置">2.3 sim-parse 在三轴中的位置</a></li>
+<li><a href="#24为什么是三个正交动作不是两个不是四个">2.4 为什么是三个正交动作（不是两个，不是四个）</a></li>
+<li><a href="#25三仓详细对照">2.5 三仓详细对照</a></li>
+<li><a href="#26三个知识库的关键边界避免后续错位">2.6 三个知识库的关键边界（避免后续错位）</a></li>
+<li><a href="#27三动作的完整生命周期举例">2.7 三动作的完整生命周期举例</a></li>
+</ul>
+<li><a href="#3背景与动机">3. 背景与动机</a></li>
+<ul>
+<li><a href="#31来源需求">3.1 来源需求</a></li>
+<li><a href="#32现有空缺">3.2 现有空缺</a></li>
+</ul>
+<li><a href="#4目标与非目标">4. 目标与非目标</a></li>
+<ul>
+<li><a href="#41目标按优先级">4.1 目标（按优先级）</a></li>
+<li><a href="#42非目标明确不做">4.2 非目标（明确不做）</a></li>
+</ul>
+<li><a href="#5用户场景">5. 用户场景</a></li>
+<ul>
+<li><a href="#场景Asimgraph2入图谱核心">场景 A：simgraph2 入图谱（核心）</a></li>
+<li><a href="#场景B数据湖QOI提取">场景 B：数据湖 QOI 提取</a></li>
+<li><a href="#场景C可视化导出">场景 C：可视化导出</a></li>
+<li><a href="#场景DCLI快速勘察">场景 D：CLI 快速勘察</a></li>
+<li><a href="#场景EQueryAgent调用外部组件不在simparse内">场景 E：Query Agent 调用（外部组件，不在 sim-parse 内）</a></li>
+</ul>
+<li><a href="#6设计原则">6. 设计原则</a></li>
+<li><a href="#7核心概念信息分层Tier">7. 核心概念：信息分层 (Tier)</a></li>
+<ul>
+<li><a href="#两条铁律">两条铁律</a></li>
+<li><a href="#模糊字段归属表避免争议">模糊字段归属表（避免争议）</a></li>
+</ul>
+<li><a href="#8信息族目录提取什么">8. 信息族目录（提取什么）</a></li>
+<ul>
+<li><a href="#81OpenFOAM信息族">8.1 OpenFOAM 信息族</a></li>
+<ul>
+<li><a href="#族A网格Mesh">族 A — 网格 (Mesh)</a></li>
+<li><a href="#族B物理场Fields">族 B — 物理场 (Fields)</a></li>
+<li><a href="#族C求解器物理设置Setup">族 C — 求解器/物理设置 (Setup)</a></li>
+<li><a href="#族D拉格朗日离散相Lagrangian">族 D — 拉格朗日 / 离散相 (Lagrangian)</a></li>
+<li><a href="#族E运行状态Runstate">族 E — 运行状态 (Run state)</a></li>
+<li><a href="#族F后处理Postprocessing">族 F — 后处理 (Post-processing)</a></li>
+<li><a href="#族G周边文件Auxiliary">族 G — 周边文件 (Auxiliary)</a></li>
+<li><a href="#族H派生QOITier5跨求解器统一">族 H — 派生 QOI（Tier 5，跨求解器统一）</a></li>
+<li><a href="#族I语义解释Tier7LLM">族 I — 语义解释（Tier 7，LLM）</a></li>
+</ul>
+<li><a href="#82关于Tier4信号面应该铺多宽">8.2 关于"Tier 4 信号面应该铺多宽"</a></li>
+<li><a href="#83其他求解器">8.3 其他求解器</a></li>
+</ul>
+<li><a href="#9实现策略PathABCD">9. 实现策略 (Path A/B/C/D)</a></li>
+<ul>
+<li><a href="#PathA静态求解器parser主力">Path A: 静态求解器 parser（主力）</a></li>
+<li><a href="#PathB通用格式启发式兜底">Path B: 通用格式启发式（兜底）</a></li>
+<li><a href="#PathCLLMDiscovery最后兜底">Path C: LLM Discovery（最后兜底）</a></li>
+<li><a href="#PathD用户插件">Path D: 用户插件</a></li>
+</ul>
+<li><a href="#10Dispatcher路径调度器">10. Dispatcher（路径调度器）</a></li>
+<ul>
+<li><a href="#用户控制">用户控制</a></li>
+</ul>
+<li><a href="#11Agent临场推断的支撑机制">11. Agent 临场推断的支撑机制</a></li>
+<ul>
+<li><a href="#111Agent准确性的五个机制">11.1 Agent 准确性的五个机制</a></li>
+<li><a href="#112simparse对Agent准确性的承诺">11.2 sim-parse 对 Agent 准确性的承诺</a></li>
+<li><a href="#113知识库三档来源">11.3 知识库三档来源</a></li>
+</ul>
+<li><a href="#12QOI演化闭环">12. QOI 演化闭环</a></li>
+<ul>
+<li><a href="#121闭环角色与流程">12.1 闭环角色与流程</a></li>
+<li><a href="#122simparse在闭环中的角色">12.2 sim-parse 在闭环中的角色</a></li>
+</ul>
+<li><a href="#13输出Schema">13. 输出 Schema</a></li>
+<ul>
+<li><a href="#131主输出dictJSON">13.1 主输出（dict / JSON）</a></li>
+<li><a href="#132QOI长表Parquetschema">13.2 QOI 长表（Parquet schema）</a></li>
+<li><a href="#133物理映射表schema">13.3 物理映射表 schema</a></li>
+</ul>
+<li><a href="#14API设计">14. API 设计</a></li>
+<ul>
+<li><a href="#141PythonAPI">14.1 Python API</a></li>
+<li><a href="#142CLI">14.2 CLI</a></li>
+</ul>
+<li><a href="#15项目结构">15. 项目结构</a></li>
+<ul>
+<li><a href="#151simparse自身结构">15.1 sim-parse 自身结构</a></li>
+<li><a href="#152在simcliworkspace中的位置">15.2 在 simcli/ workspace 中的位置</a></li>
+</ul>
+<li><a href="#16配套生态simknowledgeQueryAgentDiscoveryAgent">16. 配套生态：sim-knowledge / Query Agent / Discovery Agent</a></li>
+<ul>
+<li><a href="#161simknowledge拟建仓库">16.1 sim-knowledge（拟建仓库）</a></li>
+<ul>
+<li><a href="#simknowledgephysics<domain>">sim-knowledge/physics/<domain>/</a></li>
+<li><a href="#simknowledgeformats<format>">sim-knowledge/formats/<format>/</a></li>
+<li><a href="#simknowledgelabeledcases">sim-knowledge/labeled_cases/</a></li>
+</ul>
+<li><a href="#162QueryAgent拟建组件候选名simquery">16.2 Query Agent（拟建组件，候选名 sim-query）</a></li>
+<li><a href="#163DiscoveryAgent在simparsePathC内">16.3 Discovery Agent（在 sim-parse Path C 内）</a></li>
+</ul>
+<li><a href="#17求解器覆盖矩阵阶段交付">17. 求解器覆盖矩阵 & 阶段交付</a></li>
+<ul>
+<li><a href="#171长期目标覆盖">17.1 长期目标覆盖</a></li>
+<li><a href="#172Phase1+加Tier567交付✅已完成">17.2 Phase 1 + 加 Tier 5/6/7 交付 —— ✅ **已完成**</a></li>
+<li><a href="#173Phase246周">17.3 Phase 2（4-6 周）</a></li>
+<li><a href="#174Phase3+弹性">17.4 Phase 3+（弹性）</a></li>
+</ul>
+<li><a href="#18依赖与环境">18. 依赖与环境</a></li>
+<ul>
+<li><a href="#181运行时依赖">18.1 运行时依赖</a></li>
+<li><a href="#182开发依赖">18.2 开发依赖</a></li>
+<li><a href="#183测试环境">18.3 测试环境</a></li>
+</ul>
+<li><a href="#19关键设计决策">19. 关键设计决策</a></li>
+<li><a href="#20待决策项">20. 待决策项</a></li>
+<li><a href="#21风险与开放问题">21. 风险与开放问题</a></li>
+<li><a href="#22不在本方案范围">22. 不在本方案范围</a></li>
+<li><a href="#23变更历史">23. 变更历史</a></li>
+</ul>
+</ul>
+  </aside>
+  <main>
+<h1 id="simparse设计方案">sim-parse 设计方案</h1>
+<blockquote>
+<p><strong>状态</strong>：方案设计 v0.3，未实现
+<strong>作者</strong>：基于本会话讨论收口
+<strong>依赖关系</strong>：sim-parse 下游会被 simgraph2 backend、sim-cli runtime 调用，但<strong>不反向依赖</strong>任何下游</p>
+</blockquote>
+<hr />
+<h2 id="目录">目录</h2>
+<ul>
+<li><a href="#新读者基础概念速览faq">新读者：基础概念速览（FAQ）</a> ← <strong>第一次读建议先看</strong></li>
+</ul>
+<hr />
+<ol>
+<li><a href="#1-项目概述">项目概述</a></li>
+<li><a href="#2-三个动作--三个知识库核心架构">三个动作 × 三个知识库（核心架构）</a></li>
+<li><a href="#3-背景与动机">背景与动机</a></li>
+<li><a href="#4-目标与非目标">目标与非目标</a></li>
+<li><a href="#5-用户场景">用户场景</a></li>
+<li><a href="#6-设计原则">设计原则</a></li>
+<li><a href="#7-核心概念信息分层-tier">核心概念：信息分层 (Tier)</a></li>
+<li><a href="#8-信息族目录提取什么">信息族目录（提取什么）</a></li>
+<li><a href="#9-实现策略-path-abcd">实现策略 (Path A/B/C/D)</a></li>
+<li><a href="#10-dispatcher路径调度器">Dispatcher（路径调度器）</a></li>
+<li><a href="#11-agent-临场推断的支撑机制">Agent 临场推断的支撑机制</a></li>
+<li><a href="#12-qoi-演化闭环">QOI 演化闭环</a></li>
+<li><a href="#13-输出-schema">输出 Schema</a></li>
+<li><a href="#14-api-设计">API 设计</a></li>
+<li><a href="#15-项目结构">项目结构</a></li>
+<li><a href="#16-配套生态sim-knowledge--query-agent--discovery-agent">配套生态：sim-knowledge / Query Agent / Discovery Agent</a></li>
+<li><a href="#17-求解器覆盖矩阵--阶段交付">求解器覆盖矩阵 &amp; 阶段交付</a></li>
+<li><a href="#18-依赖与环境">依赖与环境</a></li>
+<li><a href="#19-关键设计决策">关键设计决策</a></li>
+<li><a href="#20-待决策项">待决策项</a></li>
+<li><a href="#21-风险与开放问题">风险与开放问题</a></li>
+<li><a href="#22-不在本方案范围">不在本方案范围</a></li>
+<li><a href="#23-变更历史">变更历史</a></li>
+</ol>
+<hr />
+<h2 id="新读者基础概念速览FAQ">新读者：基础概念速览（FAQ）</h2>
+<blockquote>
+<p>第一次读这份文档？以下 5 个常见问题先看 —— 然后再进 §1。每条都给了到深度章节的指针。</p>
+</blockquote>
+<h3 id="Q1Tier是什么意思">Q1. "Tier" 是什么意思？</h3>
+<p><strong>Tier = "解析深度的分层"</strong>。每深一层，知道得更多，但耗时也更大：</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>我了解到的</th>
+<th>例子</th>
+<th>成本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>这是什么类型的算例</td>
+<td>"这是 OpenFOAM 案例"</td>
+<td>毫秒</td>
+</tr>
+<tr>
+<td>2</td>
+<td>里面有哪些文件</td>
+<td>"时间步 0 / 5000，变量 T/U/p/CH4/CO2..."</td>
+<td>毫秒</td>
+</tr>
+<tr>
+<td>3</td>
+<td>求解器怎么配置的</td>
+<td>"reactingFoam + kEpsilon + EDC + GRI-Mech 3.0"</td>
+<td>几十毫秒</td>
+</tr>
+<tr>
+<td>4</td>
+<td>场数据的统计量</td>
+<td>"T 最大 1998K，Qdot 最大 7.7e8"</td>
+<td><strong>秒级</strong>（要解码二进制）</td>
+</tr>
+<tr>
+<td>5</td>
+<td>工程指标（统一命名）</td>
+<td>"lift_coefficient=0.382"</td>
+<td>毫秒</td>
+</tr>
+<tr>
+<td>6</td>
+<td>完整网格 + 场数据</td>
+<td>一个 VTU 文件</td>
+<td>秒~分钟</td>
+</tr>
+<tr>
+<td>7</td>
+<td>物理意义（推断）</td>
+<td>"这是燃烧 case，没熄火"</td>
+<td>LLM 几秒</td>
+</tr>
+</tbody>
+</table>
+<p><strong>调用方按需选</strong>：simgraph2 入图谱要 Tier 3；可视化要 Tier 6；Query Agent 用 Tier 4+5。详见 <a href="#7-核心概念信息分层-tier">§7</a>。</p>
+<h3 id="Q2Dispatcher是不是级联">Q2. "Dispatcher" 是不是"级联"？</h3>
+<p>不完全等同。<strong>Dispatcher 是个组件，"级联"是它的工作方式之一</strong>：</p>
+<ul>
+<li><strong>Dispatcher（调度器）</strong> —— 实现在 <a href="../src/sim_parse/core/cascade.py"><code>core/cascade.py</code></a>，干两件事：① 决定走哪条 Path，② 管理 Tier 之间的依赖</li>
+<li><strong>级联</strong> —— 是这个组件<strong>重试模式</strong>的名字："Path A 失败 → 试 Path B → 试 Path C"</li>
+</ul>
+<p>文件名 <code>cascade.py</code> 同时表达了"它是 dispatcher 的代码"和"工作方式是级联"。详见 <a href="#10-dispatcher路径调度器">§10</a>。</p>
+<h3 id="Q3coresolversgenericdiscoveryadapterscli是平级的吗">Q3. core / solvers / generic / discovery / adapters / cli 是平级的吗？</h3>
+<p><strong>目录上平级，代码上各有职责，且依赖单向</strong>：</p>
+<div class="codehilite"><pre><span></span><code>sim_parse/
+├── core/        ← 框架内核（协议 + 调度）── 所有人都依赖它
+├── solvers/     ← Path A：每个求解器一个子目录
+├── generic/     ← Path B：格式通用兜底
+├── discovery/   ← Path C：LLM 兜底（stub）
+├── adapters/    ← 共享工具（VTK helper）── solvers 和 generic 共用
+└── cli/         ← 命令行入口
+</code></pre></div>
+
+<p>依赖方向：</p>
+<div class="codehilite"><pre><span></span><code>            cli ──┐
+                  ▼
+              core ◄────  所有模块都依赖 core
+              ╱  │  ╲
+             ▼   ▼   ▼
+        solvers generic discovery   ← 三条 path 互不调用
+             │   │
+             ▼   ▼
+          adapters    ← solvers 和 generic 共享 VTK 工具
+</code></pre></div>
+
+<p>关键点：<strong>solvers 和 generic 不互相调用</strong>（它们是不同 path 的实现）。详见 <a href="#151-sim-parse-自身结构">§15.1 项目结构</a>。</p>
+<h3 id="Q4simknowledge是什么">Q4. sim-knowledge 是什么？</h3>
+<p>sim-knowledge 是 <strong>sim-parse 的兄弟仓库</strong>（同 workspace 下的另一个目录），<strong>不是代码、是 YAML 知识库</strong>：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>sim-parse</th>
+<th>sim-knowledge</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>内容</td>
+<td>Python 代码</td>
+<td>YAML + 标注真值</td>
+</tr>
+<tr>
+<td>维护者</td>
+<td>程序员</td>
+<td>物理工程师</td>
+</tr>
+<tr>
+<td>形态</td>
+<td>确定性代码</td>
+<td>结构化数据</td>
+</tr>
+<tr>
+<td>给谁用</td>
+<td>直接 <code>import</code> 调用</td>
+<td>LLM Agent 检索</td>
+</tr>
+<tr>
+<td>跟物理学</td>
+<td>不懂</td>
+<td>物理判据存这里</td>
+</tr>
+</tbody>
+</table>
+<p><strong>举例</strong>：判断"是否熄火"，sim-parse 写<strong>机制</strong>（投票算法），sim-knowledge 存<strong>参数</strong>（阈值=1e6 W/m³、引用 Williams 1985）。改阈值不动 sim-parse 代码，改 YAML 即可。</p>
+<p>详见 <a href="#2-三个动作--三个知识库核心架构">§2 三个动作 × 三个知识库</a> 和 <a href="#16-配套生态sim-knowledge--query-agent--discovery-agent">§16 配套生态</a>。</p>
+<h3 id="Q5为什么labeledcase针对具体DLRAcavitynormal">Q5. 为什么 labeled_case 针对具体 DLR_A_cavity_normal？</h3>
+<p>因为 labeled_cases 必须是<strong>真实的、具体的、能跑的算例</strong>，作为<strong>"真值锚点"</strong>：</p>
+<div class="codehilite"><pre><span></span><code>sim-parse 提取  →  T_max=1998K, Qdot_max=7.7e8, OH_max=3.1e-3
+                               │
+                               │ &quot;这案例算熄火吗？&quot; 人看 ParaView 后判
+                               ▼
+              ground_truth.yaml: { is_extinguished: false }
+                               │
+                               │ 这就是个真值锚点
+                               ▼
+        新写的 extinction 判据，跑这个 case，结果应该 == false
+        如果不等于 → 判据有 bug
+        如果等于 → 这条判据通过了一个真值检验
+</code></pre></div>
+
+<p><strong>为什么必须是具体 case？</strong> 因为物理判据有无数边界情况（燃料、压力、尺度都影响阈值），光靠"理论"无法验证，必须真实算例对照。</p>
+<p>每个判据需要 <strong>5-10 个 labeled cases</strong>（含 positive + negative 真值）。我们刚建的 <code>DLR_A_cavity_normal</code> 是第一个 —— 未来还会加 <code>CH4_jet_blowout</code>（真熄火）、<code>H2_jet_normal</code>、<code>kerosene_high_pressure</code> 等。详见 <a href="#11-agent-临场推断的支撑机制">§11 Agent 临场推断的支撑机制</a> 和 <a href="criteria_reference.md#11-labeled_cases-联动">criteria_reference.md §11 labeled_cases 联动</a>。</p>
+<hr />
+<h2 id="1项目概述">1. 项目概述</h2>
+<p><strong>sim-parse</strong> 是一个<strong>通用的 CAE 仿真结果解析框架</strong>，对外接口是"喂一个结果文件夹、吐出多层次的结构化数据信息"。它是更大的 sim-<em> 生态中的"</em><em>解析层</em>*"，独立于具体下游消费方（simgraph2 / sim-cli / 自定义脚本），可被任何需要"读取已完成的仿真算例"的工具调用。</p>
+<p>sim-parse 自己<strong>只做 per-case 静态提取</strong>，不做：
+- 用户问题理解（属于 Query Agent）
+- 跨案例聚合查询（属于 simgraph2 / 数据湖）
+- 物理判据演绎推断（属于 sim-knowledge + Agent）
+- 求解器运行控制（属于 sim-cli driver）</p>
+<p>整个生态见 §2。</p>
+<hr />
+<h2 id="2三个动作×三个知识库核心架构">2. 三个动作 × 三个知识库（核心架构）</h2>
+<p>理解一个 CAE 算例的全过程<strong>正交地</strong>分解为三个认知动作，每个动作对应一个独立的<strong>知识库（仓库）</strong>。这是整个 sim-<em> 生态的脊柱，也是 sim-parse 设计的根。本节是全文档</em><em>最重要的一节</em>*，后续所有边界讨论都引用这里。</p>
+<h3 id="21三动作三仓总表">2.1 三动作三仓总表</h3>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th>一句话描述</th>
+<th>知识库（仓库）</th>
+<th>内容形态</th>
+<th>组织轴</th>
+<th>服务的 Agent</th>
+<th>消费时机</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>跑</strong> (run)</td>
+<td>怎么把求解器跑起来</td>
+<td><strong>sim-skills/</strong></td>
+<td>markdown 叙事</td>
+<td>per-solver</td>
+<td>sim-cli driver Agent</td>
+<td>运行时（live solver session）</td>
+</tr>
+<tr>
+<td><strong>读</strong> (extract)</td>
+<td>陌生格式怎么读懂</td>
+<td><strong>sim-knowledge/formats/</strong></td>
+<td>YAML 结构化</td>
+<td>per-format</td>
+<td>Discovery Agent（在 sim-parse Path C 内）</td>
+<td>事后（陌生算例首次解析）</td>
+</tr>
+<tr>
+<td><strong>判</strong> (judge)</td>
+<td>这个案例物理上是什么状态</td>
+<td><strong>sim-knowledge/physics/</strong></td>
+<td>YAML 结构化</td>
+<td>per-physics-domain</td>
+<td>Query Agent</td>
+<td>事后（用户查询时）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>注意</strong>：sim-parse 自身<strong>不在三仓里</strong>，它是一个独立的"代码框架"，连接这三个动作（见 §2.3）。</p>
+<h3 id="22三仓关系图layeredview">2.2 三仓关系图（layered view）</h3>
+<div class="codehilite"><pre><span></span><code>┌────────────────────────────────────────────────────────────────────────────┐
+│                       理解一个 CAE 算例需要回答的三类问题                    │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐
+│   &quot;怎么跑？&quot;             │  │   &quot;怎么读？&quot;             │  │   &quot;怎么判？&quot;             │
+│   (run)                 │  │   (extract)             │  │   (judge)               │
+│                         │  │                         │  │                         │
+│  Allrun 失败怎么修？     │  │  陌生 .h5 里有什么？     │  │  哪些 case 熄火？        │
+│  decomposeParDict 改哪？ │  │  陌生 solver 输出怎么抓？│  │  这个 case 收敛吗？      │
+│  FAIL_PRECHECK 怎么处理？│  │  格式约定是什么？         │  │  Courant 飙升了吗？     │
+└──────────┬──────────────┘  └──────────┬──────────────┘  └──────────┬──────────────┘
+           │ 知识载体                     │ 知识载体                    │ 知识载体
+           ▼                              ▼                             ▼
+┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐
+│  sim-skills/            │  │  sim-knowledge/formats/ │  │  sim-knowledge/physics/ │
+│  ─────────────          │  │  ───────────────────    │  │  ───────────────────    │
+│  • markdown 叙事         │  │  • YAML 结构化           │  │  • YAML 结构化           │
+│  • per-solver 组织       │  │  • per-format 组织       │  │  • per-physics 组织      │
+│  • SKILL.md frontmatter │  │  • + playbooks/         │  │  • + labeled_cases/     │
+│  • 已有                  │  │  • + examples/          │  │  • + few_shot/          │
+│                         │  │  • 拟建                  │  │  • 拟建                  │
+└──────────┬──────────────┘  └──────────┬──────────────┘  └──────────┬──────────────┘
+           │ 消费方                       │ 消费方                     │ 消费方
+           ▼                              ▼                             ▼
+┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐
+│  sim-cli driver Agent   │  │  Discovery Agent        │  │  Query Agent            │
+│  (LLM)                  │  │  (LLM, in sim-parse     │  │  (LLM, 独立组件)         │
+│                         │  │   Path C)               │  │                         │
+│  生成代码操作 solver     │  │  探索陌生格式 → 抓字段   │  │  生成 Cypher/SQL → 查询 │
+└──────────┬──────────────┘  └──────────┬──────────────┘  └──────────┬──────────────┘
+           │                             │                            │
+           ▼                             ▼                            ▼
+       运行时                       陌生算例首次解析                  用户查询时
+   (live solver session)         (onboarding new format)           (query time)
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                                                                            │
+│            sim-parse  ←──── 本方案                                          │
+│                                                                            │
+│      &quot;代码框架&quot;，不是知识库；横跨三个动作之间的连接者：                        │
+│        • Path A/B：纯静态代码，不消费任何外部知识库                           │
+│        • Path C：消费 sim-knowledge/formats（&quot;读&quot;动作）                      │
+│        • 输出 (Tier 1-6)：喂给 Query Agent 做&quot;判&quot;动作的核心数据来源           │
+│        • 自带 core/canonical/qoi_rules/（最小 Tier 5 规则，外挂可加载）       │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h3 id="23simparse在三轴中的位置">2.3 sim-parse 在三轴中的位置</h3>
+<p>sim-parse 是<strong>"代码框架"而非"知识库"</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>sim-parse 是 / 不是</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>知识库？</td>
+<td>❌ 它是代码 + 自带最小 qoi_rules，但不存"跑/读/判"知识</td>
+</tr>
+<tr>
+<td>Agent？</td>
+<td>❌ 确定性代码，无 LLM（Path C 例外，但 LLM 实现在 Discovery Agent 模块）</td>
+</tr>
+<tr>
+<td>仅一个 Path 的实现？</td>
+<td>❌ 4 条 Path（A/B/C/D）并存，Path A 是主力</td>
+</tr>
+<tr>
+<td>三仓的"中转站"？</td>
+<td>✅ per-case 提取，把原始数据变成可被 Agent 消费的结构化输出</td>
+</tr>
+</tbody>
+</table>
+<p>具体地：</p>
+<ul>
+<li>sim-parse 的 <strong>Path A</strong>（已知求解器静态 parser）—— <strong>不消费</strong>任何外部知识库</li>
+<li>sim-parse 的 <strong>Path B</strong>（通用格式启发式）—— <strong>不消费</strong>任何外部知识库</li>
+<li>sim-parse 的 <strong>Path C</strong>（LLM Discovery）—— <strong>消费 sim-knowledge/formats</strong>（"读"动作的载体）</li>
+<li>sim-parse 的 <strong>输出</strong>（Tier 1-6）—— 是 Query Agent 完成"判"动作的核心输入</li>
+<li>sim-parse 的 <strong>自带 qoi_rules/</strong>—— 是它自己的内嵌规则，外挂可覆盖；不是知识库</li>
+</ul>
+<h3 id="24为什么是三个正交动作不是两个不是四个">2.4 为什么是三个正交动作（不是两个，不是四个）</h3>
+<p>每个动作回答<strong>完全不同类</strong>的问题。三者<strong>正交</strong>（独立维度，互不替代）：</p>
+<ul>
+<li>同一物理可以由不同求解器跑（<strong>跑动作不同</strong>，判动作相同）：CH4 燃烧可以用 OpenFOAM 也可以用 Fluent</li>
+<li>同一格式可以装不同物理（<strong>读动作相同</strong>，判动作不同）：HDF5 可以装 CFD 也可以装结构动力学</li>
+<li>同一求解器可以输出不同格式（跑动作相同，<strong>读动作可能不同</strong>）：OpenFOAM 可以输出 binary 也可以输出 ASCII，可压缩可不压缩</li>
+</ul>
+<p>所以这三个<strong>不能合并</strong>：把"读"和"判"合成一个仓也不行，它们的内容、维护者画像、检索方式都不同。也<strong>不会扩展为更多动作</strong>：所有"理解算例"的认知任务都能落到这三个之一。</p>
+<h3 id="25三仓详细对照">2.5 三仓详细对照</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>sim-skills（跑）</th>
+<th>sim-knowledge/formats（读）</th>
+<th>sim-knowledge/physics（判）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>回答</strong></td>
+<td>"怎么操作求解器"</td>
+<td>"怎么读陌生格式"</td>
+<td>"怎么用物理判据分类案例"</td>
+</tr>
+<tr>
+<td><strong>典型条目</strong></td>
+<td>"OpenFOAM Allrun 失败模式表"</td>
+<td>"HDF5 文件 magic + 结构识别"</td>
+<td>"extinction 判据：Qdot &lt; 1e6 ∧ T_excess &lt; 100K"</td>
+</tr>
+<tr>
+<td><strong>内容形态</strong></td>
+<td>markdown 叙事文</td>
+<td>YAML 结构化（schema）</td>
+<td>YAML 结构化（rule + threshold + reference）</td>
+</tr>
+<tr>
+<td><strong>组织目录</strong></td>
+<td>per-solver（openfoam/ fluent/ ...）</td>
+<td>per-format（hdf5/ cgns/ ...）+ playbooks/ + examples/</td>
+<td>per-physics-domain（combustion/ heat_transfer/ ...）</td>
+</tr>
+<tr>
+<td><strong>维护者画像</strong></td>
+<td>DevOps + 仿真工程师</td>
+<td>数据工程师 + 文件格式专家</td>
+<td>物理工程师 + 学者</td>
+</tr>
+<tr>
+<td><strong>测试 / 真值</strong></td>
+<td>tests/fixtures（运行回归）</td>
+<td>examples/（成功识别历史）</td>
+<td><strong>labeled_cases/（标注真值）✓ 关键</strong></td>
+</tr>
+<tr>
+<td><strong>跨求解器复用</strong></td>
+<td>不太能</td>
+<td>部分（HDF5 不分谁写的）</td>
+<td><strong>能</strong>（物理是普世的）</td>
+</tr>
+<tr>
+<td><strong>被谁消费</strong></td>
+<td>sim-cli driver Agent</td>
+<td>Discovery Agent (sim-parse Path C)</td>
+<td>Query Agent</td>
+</tr>
+<tr>
+<td><strong>消费时机</strong></td>
+<td>运行时</td>
+<td>事后（首次遇到陌生格式）</td>
+<td>事后（用户查询）</td>
+</tr>
+<tr>
+<td><strong>演化驱动</strong></td>
+<td>求解器版本迭代</td>
+<td>新格式被发现</td>
+<td>用户查询 → QOI 演化闭环（§12）</td>
+</tr>
+<tr>
+<td><strong>当前状态</strong></td>
+<td>已有</td>
+<td>拟建</td>
+<td>拟建</td>
+</tr>
+</tbody>
+</table>
+<h3 id="26三个知识库的关键边界避免后续错位">2.6 三个知识库的关键边界（避免后续错位）</h3>
+<ul>
+<li><strong>sim-parse 不内嵌 LLM</strong>：Tier 1-6 全是确定性代码。LLM 只出现在 sim-parse <strong>外部</strong>的两个 Agent 中（Discovery Agent / Query Agent）</li>
+<li><strong>sim-parse 不"维护知识"</strong>：自带的 <code>core/canonical/qoi_rules/</code> 是规则文件不是知识库；真正的知识库都在 sim-skills 和 sim-knowledge</li>
+<li><strong>三个仓库的 PR / 维护节奏独立</strong>：sim-skills 跟着求解器版本走，sim-knowledge 跟着用户问题走（QOI 闭环），sim-parse 跟着自身代码节奏走</li>
+<li><strong>跑 / 读 / 判 不要混进同一个 yaml</strong>：sim-knowledge/physics 不放求解器命令，sim-skills 不放物理判据 —— 即使内容相关，载体应该分开</li>
+<li><strong>本设计文档（design.md）只详细描述 sim-parse</strong>：sim-skills 已有自己的 CLAUDE.md / SKILL.md；sim-knowledge 待建独立设计文档（参见 §16）</li>
+</ul>
+<h3 id="27三动作的完整生命周期举例">2.7 三动作的完整生命周期举例</h3>
+<p>以"用户问一个新算例熄火没"为例，看三动作如何串起来：</p>
+<div class="codehilite"><pre><span></span><code>[Day 1] 工程师跑一个新的 reactingFoam 燃烧算例
+              │
+              ▼
+        sim-cli driver Agent ◄──── consumes ──── sim-skills/openfoam/
+              │
+              │ &quot;跑&quot;动作
+              │ (Allrun 失败 → 查 failure_patterns.md → 修)
+              ▼
+        [跑通了，留下结果文件夹]
+
+
+[Day 2] simgraph2 自动入库该算例
+              │
+              ▼
+        sim-parse.parse_case(case_root, target_tier=4)
+              │
+              │ Path A 命中（已知是 OpenFOAM）
+              ▼
+        提取 Tier 4 信号：Qdot/T/OH/...      ◄──── 此处不需要任何知识库
+              │
+              ▼
+        [输出 JSON 入 Neo4j]
+
+
+[Day 5] 另一个用户问 &quot;哪些案例熄火？&quot;
+              │
+              ▼
+        Query Agent ◄──── consumes ──── sim-knowledge/physics/combustion/
+              │                              criteria.yaml::extinction
+              │ &quot;判&quot;动作                      labeled_cases/combustion_extinction/
+              │ (套用判据 → 校准 → 翻译 Cypher → 跑库)
+              ▼
+        [返回 5 个熄火案例 + reasoning trace]
+
+
+[Day 30] simgraph2 收到一个完全陌生的 .h5 文件（in-house solver）
+              │
+              ▼
+        sim-parse.parse_case(case_root)
+              │
+              │ Path A 失败（不认识）→ Path B 部分识别 → Path C 启动
+              ▼
+        Discovery Agent ◄──── consumes ──── sim-knowledge/formats/hdf5/
+        (在 sim-parse Path C 内)            structure.yaml
+              │                              playbooks/unknown_hdf5_inspection.yaml
+              │ &quot;读&quot;动作                      examples/successful_discoveries.json
+              │ (LLM 探索 → 推断结构 → 调 h5py 抓字段)
+              ▼
+        [输出 inventory + 提议把这个 solver 加入 Path A 或 sim-knowledge/formats/]
+</code></pre></div>
+
+<p>三个动作各司其职、不互相替代。<strong>任何"理解 CAE 算例"的工程任务都会落到这三个动作之一</strong>。</p>
+<hr />
+<h2 id="3背景与动机">3. 背景与动机</h2>
+<h3 id="31来源需求">3.1 来源需求</h3>
+<ol>
+<li><strong>simgraph2 §3.3 模块三</strong>：需要从 OpenFOAM/Fluent/CGNS/HDF5 等结果文件夹提取确定性元描述 JSON 给 LLM 模块和图谱使用（要求"绝不抛异常、未提取字段填 null"）</li>
+<li><strong>跨求解器 QOI 对比</strong>（场景 2/3）：CL/CD、Nu、最大温度、模态频率等工程量需要进入数据湖，做参数扫掠和跨求解器聚合</li>
+<li><strong>可视化并排</strong>（场景 4）：需要把任意求解器的结果导出 VTU 给 ParaView</li>
+<li><strong>未来扩展</strong>（场景 1，求解器验证）：需要完整 mesh+field 数据 —— 当前不做但架构要预留</li>
+</ol>
+<h3 id="32现有空缺">3.2 现有空缺</h3>
+<ul>
+<li>sim-cli 的 <code>DriverProtocol</code> 只覆盖<strong>运行时</strong>（<code>run_file</code> / <code>lint</code> / <code>parse_output(stdout)</code>），不覆盖<strong>结果文件解析</strong></li>
+<li>simgraph2 backend 计划自建 <code>parsers/</code> 模块，但工作量大且和 sim-cli 体系割裂</li>
+<li>行业内没有现成的"统一多求解器结果解析层"开源工具</li>
+</ul>
+<hr />
+<h2 id="4目标与非目标">4. 目标与非目标</h2>
+<h3 id="41目标按优先级">4.1 目标（按优先级）</h3>
+<table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>目标</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>P0</strong></td>
+<td>给定一个结果文件夹，输出<strong>分层级</strong>结构化信息（Tier 1-6）</td>
+<td>7 层分层见 §7</td>
+</tr>
+<tr>
+<td><strong>P0</strong></td>
+<td>第一批支持 <strong>OpenFOAM</strong>（含主流 solver 家族）</td>
+<td>用 <a href="D:/Git/SimGraph2/test_data/DLR_A_combustion/DLR_A_cavity">DLR_A_cavity</a> 验收</td>
+</tr>
+<tr>
+<td><strong>P0</strong></td>
+<td>调度器（dispatcher）自动级联实现策略（Path A/B/C/D）</td>
+<td>见 §10</td>
+</tr>
+<tr>
+<td><strong>P0</strong></td>
+<td>不抛未捕获异常；缺失字段填 <code>None</code> + 标记来源</td>
+<td>simgraph2 硬性要求</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>第二批支持 <strong>CGNS / HDF5 / Fluent / LS-DYNA</strong></td>
+<td>都有 VTK reader</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>提供 Python API + CLI 双形态</td>
+<td><code>import sim_parse</code> 和 <code>simparse &lt;case&gt;</code></td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>用户可注册自定义 parser 插件</td>
+<td>扩展长尾求解器（Path D）</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>Tier 7 LLM 语义推断</td>
+<td>接 simgraph2 模块四的 Ollama 或外部 LLM</td>
+</tr>
+<tr>
+<td><strong>P2</strong></td>
+<td>Path C LLM Discovery（陌生格式兜底）</td>
+<td>涉密环境可关闭；依赖 sim-knowledge/formats</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42非目标明确不做">4.2 非目标（明确不做）</h3>
+<table>
+<thead>
+<tr>
+<th>不做什么</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>运行求解器</strong></td>
+<td>sim-cli driver 干这个</td>
+</tr>
+<tr>
+<td><strong>图谱写入 / 数据库交互</strong></td>
+<td>simgraph2 backend 的事，sim-parse 只输出 JSON / Parquet</td>
+</tr>
+<tr>
+<td><strong>回答用户自然语言问题</strong></td>
+<td><strong>Query Agent</strong> 的事（不在 sim-parse 内）</td>
+</tr>
+<tr>
+<td><strong>跨案例聚合查询</strong>（"哪些案例熄火"）</td>
+<td>simgraph2 / DuckDB 的事</td>
+</tr>
+<tr>
+<td><strong>物理判据知识库</strong></td>
+<td><strong>sim-knowledge/physics</strong> 的事（独立仓库）</td>
+</tr>
+<tr>
+<td><strong>格式探索知识库</strong></td>
+<td><strong>sim-knowledge/formats</strong> 的事（独立仓库）</td>
+</tr>
+<tr>
+<td><strong>跨网格场插值（mesh-to-mesh mapping）</strong></td>
+<td>场景 1 不在当前范围</td>
+</tr>
+<tr>
+<td><strong>可视化渲染</strong></td>
+<td>sim-parse 只导 VTU，渲染交给 ParaView</td>
+</tr>
+<tr>
+<td><strong>Abaqus .odb 第一阶段不支持</strong></td>
+<td>VTK 没有 Abaqus reader；只支持 .inp 文本（Tier 1-3）</td>
+</tr>
+<tr>
+<td><strong>ANSYS Mechanical / MAPDL 第一阶段不支持</strong></td>
+<td>需要 PyDPF，单独大依赖，留后续</td>
+</tr>
+<tr>
+<td><strong>STAR-CCM+ (.sim) 第一阶段不支持</strong></td>
+<td>完全封闭格式，需要 macro 预导出</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5用户场景">5. 用户场景</h2>
+<h3 id="场景Asimgraph2入图谱核心">场景 A：simgraph2 入图谱（核心）</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sim_parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_case</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">parse_case</span><span class="p">(</span><span class="s2">&quot;/data/case_run023&quot;</span><span class="p">,</span> <span class="n">target_tier</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">discovery</span><span class="o">=</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+<span class="c1"># → simgraph2 backend 把 result 写入 Neo4j</span>
+</code></pre></div>
+
+<h3 id="场景B数据湖QOI提取">场景 B：数据湖 QOI 提取</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sim_parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_case</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">parse_case</span><span class="p">(</span><span class="s2">&quot;/data/case_run023&quot;</span><span class="p">,</span> <span class="n">target_tier</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="c1"># → result[&quot;tier_5_qoi&quot;] 写 Parquet 长表</span>
+</code></pre></div>
+
+<h3 id="场景C可视化导出">场景 C：可视化导出</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sim_parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_vtu</span>
+<span class="n">vtu_path</span> <span class="o">=</span> <span class="n">to_vtu</span><span class="p">(</span><span class="s2">&quot;/data/case_run023&quot;</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">5000.0</span><span class="p">)</span>
+<span class="c1"># → ParaView 直接打开</span>
+</code></pre></div>
+
+<h3 id="场景DCLI快速勘察">场景 D：CLI 快速勘察</h3>
+<div class="codehilite"><pre><span></span><code>simparse<span class="w"> </span>/data/case_run023<span class="w"> </span>--tier<span class="w"> </span><span class="m">3</span><span class="w"> </span>--json
+</code></pre></div>
+
+<h3 id="场景EQueryAgent调用外部组件不在simparse内">场景 E：Query Agent 调用（外部组件，不在 sim-parse 内）</h3>
+<div class="codehilite"><pre><span></span><code>用户问 &quot;哪些案例熄火了？&quot;
+  → Query Agent 检索 sim-knowledge/physics/combustion/criteria.yaml
+  → 调 sim_parse.parse_case() 拿 Tier 4 信号（如果数据湖里没有）
+  → 应用判据，跨案例查询
+  → 返回答案
+</code></pre></div>
+
+<hr />
+<h2 id="6设计原则">6. 设计原则</h2>
+<ol>
+<li><strong>分层 (Tier) 与策略 (Path) 正交</strong>：Tier 描述"信息深度"，Path 描述"实现方式"，两者独立组合</li>
+<li><strong>确定性优先</strong>：Tier 1-6 永远确定性，LLM 只在 Tier 7 或 Path C 出现，且可关闭</li>
+<li><strong>零异常契约</strong>：所有 public API 永不抛未捕获异常，失败字段 <code>None</code> + 标 source</li>
+<li><strong>依赖最小化</strong>：核心依赖仅 <code>vtk + numpy + h5py + pyyaml + Python stdlib</code></li>
+<li><strong>下游单向依赖</strong>：sim-parse 不知道 simgraph2 / sim-cli / sim-knowledge 的存在</li>
+<li><strong>插件式扩展</strong>：用户可注册自定义 parser 不改框架（Path D）</li>
+<li><strong>成本透明</strong>：每层标注典型耗时，调用方按需选择深度</li>
+<li><strong>Agent 之外无 LLM</strong>：sim-parse 自身代码绝不调用 LLM；LLM 是 Agent 的事</li>
+</ol>
+<hr />
+<h2 id="7核心概念信息分层Tier">7. 核心概念：信息分层 (Tier)</h2>
+<p>每个 Tier 有<strong>判定规则</strong>（遇到新字段判断归属哪一层）。</p>
+<p>"Tier" 字面意思是"层级"。在 sim-parse 里它指<strong>"我对这个算例了解到了多深"</strong>。每深一层，知道得更多，但耗时也更大：</p>
+<p>Tier    我了解到的   例子  成本
+1   这是什么类型  "这是 OpenFOAM 案例"    毫秒
+2   里面有什么   "有 0/ 5000/ 时间目录、T/U/p 等变量、Allrun 脚本"   毫秒
+3   求解器配置   "用 reactingFoam + kEpsilon 湍流 + EDC 燃烧 + GRI-Mech 3.0"  几十毫秒
+4   场数据统计   "T 最大 1998K、Qdot 最大 7.7e8 W/m³" 秒级（要解码二进制数组）
+5   工程指标（统一命名）  "lift_coefficient=0.382, max_temperature=1998K" 毫秒
+6   完整网格+场数据    一个完整的 VTU 文件    秒到分钟
+7   物理意义    "这是燃烧 case，没熄火" LLM 几秒
+调用方按需选：simgraph2 入图谱只要 Tier 3 就够；ParaView 可视化要 Tier 6；Query Agent 回答问题用 Tier 4+5。</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>名称</th>
+<th>判定规则</th>
+<th>输入</th>
+<th>输出</th>
+<th>重工具？</th>
+<th>确定性</th>
+<th>典型耗时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td>Identify</td>
+<td>仅看文件签名/扩展名/魔数/目录结构能判断？</td>
+<td>目录路径</td>
+<td><code>{format, solver, version, layout}</code></td>
+<td>❌</td>
+<td>✅</td>
+<td>&lt; 10 ms</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>Inventory</td>
+<td>仅靠 <code>os.listdir</code> + 后缀扫描能列出？</td>
+<td>目录路径</td>
+<td>文件/变量/时间步清单</td>
+<td>❌</td>
+<td>✅</td>
+<td>&lt; 50 ms</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>Metadata</td>
+<td>仅读文本字典/文件头/keyword block 能拿到？</td>
+<td>目录路径</td>
+<td>扁平 KV dict</td>
+<td>❌</td>
+<td>✅</td>
+<td>&lt; 200 ms</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>FieldStats</td>
+<td>需解码数组成 numpy 但不保留完整数组？</td>
+<td>目录 + 时间/字段</td>
+<td>min/max/mean/积分/时序</td>
+<td>✅ VTK</td>
+<td>✅</td>
+<td>秒级</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td>QOI</td>
+<td>需查物理映射表 + 单位字典做命名归一？</td>
+<td>Tier 3+4 输出</td>
+<td>QOI 长表 records</td>
+<td>部分</td>
+<td>✅</td>
+<td>毫秒（已有 T4）</td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td>FullData</td>
+<td>需输出整个 mesh + 完整场？</td>
+<td>目录 + 时间/字段</td>
+<td>VTU 文件 / numpy</td>
+<td>✅ VTK</td>
+<td>✅</td>
+<td>秒~分钟</td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td>Semantic</td>
+<td>需推断（不是提取）？</td>
+<td>上面任意层输出</td>
+<td>字段 + confidence 标注</td>
+<td>LLM</td>
+<td>❌</td>
+<td>秒级</td>
+</tr>
+</tbody>
+</table>
+<h3 id="两条铁律">两条铁律</h3>
+<ul>
+<li><strong>Tier 1-3 永远不调用 VTK / 任何重工具</strong>（无 VTK 环境也能用，对涉密/容器环境友好）</li>
+<li><strong>Tier 7 永远不混进 Tier 1-6</strong>（语义推断独立、可关闭、可降级）</li>
+</ul>
+<h3 id="模糊字段归属表避免争议">模糊字段归属表（避免争议）</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>归属</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mesh_cells</code> (从 owner header note)</td>
+<td>T3</td>
+<td>文本，不解码数组</td>
+</tr>
+<tr>
+<td><code>bounding_box</code> (从 points)</td>
+<td>T4</td>
+<td>必须解码 binary 数组</td>
+</tr>
+<tr>
+<td><code>boundary patches list</code> (名字+类型)</td>
+<td>T3</td>
+<td>文本字典</td>
+</tr>
+<tr>
+<td><code>variable_ranges</code> (per-field min/max)</td>
+<td>T4</td>
+<td>解码 internalField</td>
+</tr>
+<tr>
+<td><code>convergence_orders</code> (从 log 算残差下降)</td>
+<td>T4</td>
+<td>文本 + 数值计算</td>
+</tr>
+<tr>
+<td><code>lift_coefficient</code> (forceCoeffs.dat)</td>
+<td>T4 输出 → T5 命名</td>
+<td>读 CSV=T4，命名=T5</td>
+</tr>
+<tr>
+<td><code>solver_type = "reactingFoam"</code></td>
+<td>T1</td>
+<td>直接读 controlDict::application</td>
+</tr>
+<tr>
+<td><code>physics_class = "combustion+spray"</code></td>
+<td>T7</td>
+<td>推断不是直读</td>
+</tr>
+<tr>
+<td><code>is_extinguished</code></td>
+<td>T5（YAML 规则）/ T7（Agent 临场）</td>
+<td>见 §11</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8信息族目录提取什么">8. 信息族目录（提取什么）</h2>
+<p>按"信息族"组织，每族下面分到对应 Tier，每条标了来源。</p>
+<h3 id="81OpenFOAM信息族">8.1 OpenFOAM 信息族</h3>
+<h4 id="族A网格Mesh">族 A — 网格 (Mesh)</h4>
+<table>
+<thead>
+<tr>
+<th>信息</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>网格量 (<code>nCells</code>)</td>
+<td>3</td>
+<td><code>constant/polyMesh/owner</code> 头部 <code>note "nCells: NNN nFaces: NNN ..."</code> 字段</td>
+</tr>
+<tr>
+<td>点数 (<code>nPoints</code>)</td>
+<td>3</td>
+<td><code>constant/polyMesh/points</code> 头部 / 第一行计数</td>
+</tr>
+<tr>
+<td>内部面数 (<code>nInternalFaces</code>)</td>
+<td>3</td>
+<td><code>constant/polyMesh/owner</code> 头部</td>
+</tr>
+<tr>
+<td>总面数 (<code>nFaces</code>)</td>
+<td>3</td>
+<td><code>constant/polyMesh/faces</code> 头部</td>
+</tr>
+<tr>
+<td>包围盒</td>
+<td>4</td>
+<td>全量读 <code>points</code> 算 min/max（VTK）</td>
+</tr>
+<tr>
+<td>网格类型（hex/tet/poly/混合）</td>
+<td>3-4</td>
+<td><code>polyMesh/cellZones</code> 推断 + <code>faces</code> 文件每个 face 的点数分布</td>
+</tr>
+<tr>
+<td>边界 patch 列表（名字、类型、面数、起始面）</td>
+<td>3</td>
+<td><code>constant/polyMesh/boundary</code> 文本字典</td>
+</tr>
+<tr>
+<td>cellZones / faceZones / pointSets</td>
+<td>2-3</td>
+<td><code>constant/polyMesh/{cellZones,faceZones,sets/}*</code> 存在性 + 内容</td>
+</tr>
+<tr>
+<td>多 region 结构</td>
+<td>1</td>
+<td><code>constant/&lt;region&gt;/polyMesh/</code> 子目录是否存在</td>
+</tr>
+<tr>
+<td>网格分解（并行）</td>
+<td>3</td>
+<td><code>system/decomposeParDict</code> + <code>processor*</code> 目录</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族B物理场Fields">族 B — 物理场 (Fields)</h4>
+<table>
+<thead>
+<tr>
+<th>信息</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>变量名清单</td>
+<td>2</td>
+<td>时间目录里的文件名</td>
+</tr>
+<tr>
+<td>变量类型（volScalarField/volVectorField/volTensorField/surfaceScalarField/...）</td>
+<td>3</td>
+<td>每个场文件 header 里的 <code>class</code> 字段</td>
+</tr>
+<tr>
+<td>量纲（dimensions [kg m s K mol A cd]）</td>
+<td>3</td>
+<td>每个场文件 header 里的 <code>dimensions</code> 行</td>
+</tr>
+<tr>
+<td>BC 类型/值（per patch per field）</td>
+<td>3</td>
+<td>每个场文件的 <code>boundaryField{...}</code> 块</td>
+</tr>
+<tr>
+<td>内场 min/max/mean</td>
+<td>4</td>
+<td>VTK 读 <code>internalField</code></td>
+</tr>
+<tr>
+<td>内场分布直方图</td>
+<td>4</td>
+<td>VTK</td>
+</tr>
+<tr>
+<td>时间演化（每时间步统计）</td>
+<td>4</td>
+<td>遍历所有时间目录</td>
+</tr>
+<tr>
+<td>全场数据（point/cell-centered arrays）</td>
+<td>6</td>
+<td>VTK → VTU</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族C求解器物理设置Setup">族 C — 求解器/物理设置 (Setup)</h4>
+<table>
+<thead>
+<tr>
+<th>信息</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>求解器名（<code>application</code>）</td>
+<td>1-3</td>
+<td><code>system/controlDict::application</code></td>
+</tr>
+<tr>
+<td>时间控制（startTime/endTime/deltaT/writeInterval/adjustTimeStep）</td>
+<td>3</td>
+<td><code>system/controlDict</code></td>
+</tr>
+<tr>
+<td>离散格式（divergence/gradient/laplacian）</td>
+<td>3</td>
+<td><code>system/fvSchemes</code></td>
+</tr>
+<tr>
+<td>线性求解器配置（solver/preconditioner/tolerance/relaxation）</td>
+<td>3</td>
+<td><code>system/fvSolution</code></td>
+</tr>
+<tr>
+<td>湍流模型（RAS/LES + model name + coefficients）</td>
+<td>3</td>
+<td><code>constant/turbulenceProperties</code> + <code>RASProperties</code>/<code>LESProperties</code></td>
+</tr>
+<tr>
+<td>热物性模型（thermo type/mixture/transport/equation of state）</td>
+<td>3</td>
+<td><code>constant/thermophysicalProperties</code></td>
+</tr>
+<tr>
+<td>化学反应启用？机理名</td>
+<td>3</td>
+<td><code>constant/chemistryProperties</code>、<code>constant/reactions</code>、<code>chemkin/*.inp</code></td>
+</tr>
+<tr>
+<td>燃烧模型（PaSR / EDC / laminar）</td>
+<td>3</td>
+<td><code>constant/combustionProperties</code></td>
+</tr>
+<tr>
+<td>喷雾设置（injection model / particle props / 蒸发模型）</td>
+<td>3</td>
+<td><code>constant/sprayCloudProperties</code></td>
+</tr>
+<tr>
+<td>重力</td>
+<td>3</td>
+<td><code>constant/g</code></td>
+</tr>
+<tr>
+<td>MRF / fvOptions（动量源、点火源、多孔介质）</td>
+<td>3</td>
+<td><code>constant/MRFProperties</code>、<code>system/fvOptions</code></td>
+</tr>
+<tr>
+<td>边界条件（per patch + per field）</td>
+<td>3</td>
+<td>时间目录场文件的 <code>boundaryField</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="族D拉格朗日离散相Lagrangian">族 D — 拉格朗日 / 离散相 (Lagrangian)</h4>
+<table>
+<thead>
+<tr>
+<th>信息</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>是否有拉格朗日相</td>
+<td>1</td>
+<td><code>&lt;time&gt;/lagrangian/</code> 是否存在</td>
+</tr>
+<tr>
+<td>Cloud 名列表</td>
+<td>2</td>
+<td><code>&lt;time&gt;/lagrangian/&lt;cloud&gt;/</code> 子目录</td>
+</tr>
+<tr>
+<td>每 cloud 的粒子变量</td>
+<td>2</td>
+<td>cloud 子目录里的文件名</td>
+</tr>
+<tr>
+<td>粒子数（每 cloud）</td>
+<td>4</td>
+<td>VTK 读 <code>nParticle</code> 或 <code>positions</code> 长度</td>
+</tr>
+<tr>
+<td>粒子统计（直径分布、温度分布、速度分布）</td>
+<td>4</td>
+<td>VTK</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族E运行状态Runstate">族 E — 运行状态 (Run state)</h4>
+<table>
+<thead>
+<tr>
+<th>信息</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>已写时间步列表</td>
+<td>2</td>
+<td>顶层目录浮点目录扫描</td>
+</tr>
+<tr>
+<td>最新时间</td>
+<td>2</td>
+<td>时间步排序取最大</td>
+</tr>
+<tr>
+<td>时间步数</td>
+<td>2</td>
+<td>计数</td>
+</tr>
+<tr>
+<td>是否完成（vs endTime）</td>
+<td>3</td>
+<td>最新时间 vs <code>controlDict::endTime</code></td>
+</tr>
+<tr>
+<td>残差历史</td>
+<td>4</td>
+<td>log 文件解析</td>
+</tr>
+<tr>
+<td>收敛判断</td>
+<td>4</td>
+<td>残差最后值 vs convergence tolerance</td>
+</tr>
+</tbody>
+</table>
+<h4 id="族F后处理Postprocessing">族 F — 后处理 (Post-processing)</h4>
+<table>
+<thead>
+<tr>
+<th>信息</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>函数对象列表</td>
+<td>2-3</td>
+<td><code>system/controlDict::functions</code> 或独立 dict 文件</td>
+</tr>
+<tr>
+<td>forces / forceCoeffs（CL/CD/CM 时序）</td>
+<td>4</td>
+<td><code>postProcessing/forces*/&lt;time&gt;/forceCoeffs.dat</code></td>
+</tr>
+<tr>
+<td>探针 / probe 数据</td>
+<td>4</td>
+<td><code>postProcessing/probes/&lt;time&gt;/&lt;var&gt;</code></td>
+</tr>
+<tr>
+<td>切片 / 采样平面</td>
+<td>2</td>
+<td><code>system/cuttingPlane</code>、<code>postProcessing/cuttingPlane/</code></td>
+</tr>
+<tr>
+<td>monitor（质量流、平均量等）</td>
+<td>4</td>
+<td><code>postProcessing/&lt;name&gt;/&lt;time&gt;/*.dat</code></td>
+</tr>
+<tr>
+<td>残差文件（functions 写出的）</td>
+<td>4</td>
+<td><code>postProcessing/residuals/&lt;time&gt;/residuals.dat</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="族G周边文件Auxiliary">族 G — 周边文件 (Auxiliary)</h4>
+<table>
+<thead>
+<tr>
+<th>信息</th>
+<th>Tier</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>log 文件路径列表</td>
+<td>2</td>
+<td>顶层 <code>log.*</code></td>
+</tr>
+<tr>
+<td>Allrun/Allclean/Allmesh 脚本</td>
+<td>2</td>
+<td>顶层脚本文件</td>
+</tr>
+<tr>
+<td>README / 注释</td>
+<td>2</td>
+<td><code>README*</code>, <code>*.txt</code></td>
+</tr>
+<tr>
+<td>OpenFOAM 版本（版本号）</td>
+<td>1-3</td>
+<td>任意一个 OF 字典文件的 header <code>version</code> 字段或 log 里的 banner</td>
+</tr>
+<tr>
+<td>外部资源（chemkin、CAD 几何文件）</td>
+<td>2</td>
+<td><code>chemkin/</code>、<code>constant/triSurface/</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="族H派生QOITier5跨求解器统一">族 H — 派生 QOI（Tier 5，跨求解器统一）</h4>
+<p>通过物理映射表 + 单位字典翻译：</p>
+<ul>
+<li><code>lift_coefficient</code> ← <code>forces/forceCoeffs.dat:Cl[-1]</code></li>
+<li><code>drag_coefficient</code> ← <code>forces/forceCoeffs.dat:Cd[-1]</code></li>
+<li><code>convergence_orders_U</code> ← log 残差下降阶数</li>
+<li><code>max_temperature</code> ← <code>T.internalField.max()</code></li>
+<li><code>ignition_delay</code> ← <code>Qdot</code> 时序中超阈值的时刻</li>
+<li><code>mean_outlet_velocity</code> ← outlet patch 上 <code>U</code> 的面积加权平均（需要场积分）</li>
+</ul>
+<p>完整映射表见 <code>core/canonical/variable_dict.yaml</code>（Phase 2 实化）。</p>
+<h4 id="族I语义解释Tier7LLM">族 I — 语义解释（Tier 7，LLM）</h4>
+<ul>
+<li>物理类型分类（"燃烧 + 喷雾 + 反应流"）</li>
+<li>自然语言摘要</li>
+<li>推断车辆类型 / 工况 / 项目（结合 dirname、log 头、scripts）</li>
+</ul>
+<h3 id="82关于Tier4信号面应该铺多宽">8.2 关于"Tier 4 信号面应该铺多宽"</h3>
+<p>Tier 4 输出<strong>不是只为当前已知 QOI 服务</strong>，而是为<strong>未来用户可能问的所有问题</strong>铺路。原则：</p>
+<blockquote>
+<p><strong>凡是燃烧/传热/流场/数值类常见问题需要的信号，都应该在 Tier 4 抓出来</strong>，哪怕当前没有对应 Tier 5 QOI 规则。</p>
+</blockquote>
+<p>这是因为 Query Agent (§16) 在用户问陌生问题时，需要从已提取信号合成判据。<strong>信号没抓 → Agent 也无能为力</strong>。具体推荐覆盖见 §11。</p>
+<h3 id="83其他求解器">8.3 其他求解器</h3>
+<p>CGNS、Fluent、LS-DYNA 等的信息族表，待 Phase 2+ 各自的 <code>docs/solvers/&lt;name&gt;.md</code> 文档化。</p>
+<hr />
+<h2 id="9实现策略PathABCD">9. 实现策略 (Path A/B/C/D)</h2>
+<p>每个 Tier 内部可以有四条<strong>实现路径</strong>，dispatcher 自动级联：</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>名称</th>
+<th>知道求解器？</th>
+<th>知道格式？</th>
+<th>LLM？</th>
+<th>确定性</th>
+<th>何时用</th>
+<th>知识库依赖</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A</strong></td>
+<td>静态求解器 parser</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>✅</td>
+<td>已注册的求解器，最快路径</td>
+<td>自带 (<code>solvers/</code>)</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>通用格式启发式</td>
+<td>❌</td>
+<td>✅</td>
+<td>❌</td>
+<td>✅</td>
+<td>格式认得（HDF5/CGNS）但求解器不认得；A 部分缺失时填补</td>
+<td>自带 (<code>generic/</code>)</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>LLM Discovery</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>❌</td>
+<td>完全陌生格式；A+B 都失败</td>
+<td><strong>外部 sim-knowledge/formats</strong></td>
+</tr>
+<tr>
+<td><strong>D</strong></td>
+<td>用户插件</td>
+<td>✅（用户写）</td>
+<td>✅</td>
+<td>❌</td>
+<td>✅</td>
+<td>长尾求解器；不改框架代码</td>
+<td>用户自带</td>
+</tr>
+</tbody>
+</table>
+<h3 id="PathA静态求解器parser主力">Path A: 静态求解器 parser（主力）</h3>
+<p>每个支持的求解器在 <code>solvers/&lt;name&gt;/</code> 下实现 Tier 1-6（按需）。详见 §15 项目结构。</p>
+<h3 id="PathB通用格式启发式兜底">Path B: 通用格式启发式（兜底）</h3>
+<p>不绑求解器，只利用格式标准。在 <code>generic/</code> 下实现：</p>
+<div class="codehilite"><pre><span></span><code>generic/
+  ├── hdf5_dump.py     # 任何 HDF5 → 树+shape+attrs
+  ├── vtk_probe.py     # 暴力尝试每个 VTK reader
+  ├── text_log.py      # 通用残差/收敛正则
+  ├── csv_inventory.py # 通用 CSV 元数据
+  └── magic.py         # 文件魔数库
+</code></pre></div>
+
+<p>被两类情况触发：
+1. <strong>Path A 失败但格式认得</strong> —— 例如未知求解器写出的 HDF5
+2. <strong>Path A 部分字段缺失</strong> —— Path B 针对 missing 字段补填</p>
+<h3 id="PathCLLMDiscovery最后兜底">Path C: LLM Discovery（最后兜底）</h3>
+<p>跟 sim-cli driver paradigm 同款：LLM 写代码、框架给安全工具集 + 沙盒执行。</p>
+<div class="codehilite"><pre><span></span><code>discovery/
+  ├── agent.py         # LLM 调度逻辑
+  ├── tools.py         # list_dir / read_text / try_vtk_reader / py_exec
+  └── sandbox.py       # 沙盒执行 LLM 生成的代码（只读 FS、无网络）
+</code></pre></div>
+
+<p><strong>Path C 实现需要消费 <code>sim-knowledge/formats/</code></strong>（外部仓库，见 §16），具体包括：
+- <code>formats/hdf5/structure.yaml</code> —— HDF5 结构识别规则
+- <code>formats/conventions/*.yaml</code> —— 跨求解器命名约定
+- <code>formats/playbooks/*.yaml</code> —— 探索策略
+- <code>formats/examples/*.json</code> —— 历史成功案例（few-shot）</p>
+<p><strong>Phase 1 不实现 Path C 真实逻辑</strong>，留 stub：返回 <code>{"unsupported": True, "reason": "discovery not implemented"}</code>。</p>
+<h3 id="PathD用户插件">Path D: 用户插件</h3>
+<p><code>plugins/</code> 目录注册第三方 parser，使用 entry_points 机制：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 用户自己的项目里</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sim_parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_parser</span>
+
+<span class="nd">@register_parser</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_solver&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyParser</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">identify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+
+<hr />
+<h2 id="10Dispatcher路径调度器">10. Dispatcher（路径调度器）</h2>
+<p><strong>确定性的 ~30 行 if/else 状态机</strong>，不调 LLM。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_case</span><span class="p">(</span><span class="n">case_root</span><span class="p">,</span> <span class="n">target_tier</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">discovery</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">):</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Step 1: Tier 1 识别</span>
+    <span class="n">identity</span> <span class="o">=</span> <span class="n">path_a_or_b_identify</span><span class="p">(</span><span class="n">case_root</span><span class="p">)</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">identity</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">identity</span><span class="p">[</span><span class="s2">&quot;format&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">discovery</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="s2">&quot;on&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">path_c_discover</span><span class="p">(</span><span class="n">case_root</span><span class="p">,</span> <span class="n">target_tier</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">out</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;unknown_format&quot;</span><span class="p">}</span>
+
+    <span class="c1"># Step 2: 决定默认 path</span>
+    <span class="n">default_path</span> <span class="o">=</span> <span class="s2">&quot;A&quot;</span> <span class="k">if</span> <span class="n">identity</span><span class="p">[</span><span class="s2">&quot;format&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">REGISTERED_SOLVERS</span> <span class="k">else</span> <span class="s2">&quot;B&quot;</span>
+
+    <span class="c1"># Step 3: 逐 Tier 跑</span>
+    <span class="k">for</span> <span class="n">tier</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">target_tier</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">run_tier</span><span class="p">(</span><span class="n">tier</span><span class="p">,</span> <span class="n">case_root</span><span class="p">,</span> <span class="n">default_path</span><span class="p">)</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="c1"># Step 4: 缺失字段兜底</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">missing</span> <span class="ow">and</span> <span class="n">default_path</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+            <span class="n">patch</span> <span class="o">=</span> <span class="n">run_tier</span><span class="p">(</span><span class="n">tier</span><span class="p">,</span> <span class="n">case_root</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="n">only</span><span class="o">=</span><span class="n">missing</span><span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">any_still_missing</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="ow">and</span> <span class="n">discovery</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="s2">&quot;on&quot;</span><span class="p">):</span>
+            <span class="n">patch</span> <span class="o">=</span> <span class="n">path_c_fill_missing</span><span class="p">(</span><span class="n">case_root</span><span class="p">,</span> <span class="n">missing_fields</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">context</span><span class="o">=</span><span class="n">out</span><span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">out</span>
+</code></pre></div>
+
+<h3 id="用户控制">用户控制</h3>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>默认</td>
+<td>A→B→C 自动级联</td>
+</tr>
+<tr>
+<td><code>--strict</code></td>
+<td>仅 A，缺失字段保留 None，不补</td>
+</tr>
+<tr>
+<td><code>--discovery=off</code></td>
+<td>允许 A+B，禁 C（涉密环境）</td>
+</tr>
+<tr>
+<td><code>--force-path=B</code></td>
+<td>跳过 A 直接从 B 开始（调试用）</td>
+</tr>
+<tr>
+<td><code>--force-solver=openfoam</code></td>
+<td>强行当作 OpenFOAM 解（识别错误时纠正）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11Agent临场推断的支撑机制">11. Agent 临场推断的支撑机制</h2>
+<p><strong>注意</strong>：本节描述的 Agent 推断不在 sim-parse 内部，但 sim-parse 的设计需要为它<strong>预留接口</strong>。具体 Agent 实现属于 Query Agent / Discovery Agent（见 §16）。</p>
+<h3 id="111Agent准确性的五个机制">11.1 Agent 准确性的五个机制</h3>
+<p>让 Agent 临场推断（如"这个案例熄火没？"）足够可靠，需要五个机制叠加（按 ROI 排序）：</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>机制</th>
+<th>ROI</th>
+<th>一句话本质</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>结构化知识库</strong>（YAML，非 markdown）</td>
+<td>⭐⭐⭐⭐⭐</td>
+<td>LLM 不"想"，只"查"</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>校准检验</strong>（在 labeled_cases 上测试判据）</td>
+<td>⭐⭐⭐⭐⭐</td>
+<td>实测胜过理论</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>工具编排</strong> 取代自由生成</td>
+<td>⭐⭐⭐⭐</td>
+<td>自由度受限 = 出错空间小</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>强制结构化输出</strong></td>
+<td>⭐⭐⭐</td>
+<td>强制 self-assessment</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Few-shot 示例</strong></td>
+<td>⭐⭐</td>
+<td>模仿好示范</td>
+</tr>
+</tbody>
+</table>
+<p>机制 #1 + #2 占总收益 70%+。如果只能做两件事，做这两件。<strong>这两件事都在 <code>sim-knowledge/</code> 仓库内</strong>，不在 sim-parse 内。</p>
+<h3 id="112simparse对Agent准确性的承诺">11.2 sim-parse 对 Agent 准确性的承诺</h3>
+<p>为了让上述机制能跑起来，sim-parse 承诺三件事：</p>
+<ol>
+<li><strong>Tier 4 信号面足够宽</strong>：把 Agent 可能需要的判据基础信号都抓出来。具体推荐覆盖（OpenFOAM 燃烧场景）：</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>能回答什么问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Qdot_max_over_time</code></td>
+<td>是否熄火、是否点火延迟</td>
+</tr>
+<tr>
+<td><code>T_max_over_time</code>, <code>T_min</code>, <code>T_inlet</code></td>
+<td>是否熄火、最高温达不达标</td>
+</tr>
+<tr>
+<td><code>OH_max</code>, <code>CH_max</code>, <code>H_max</code></td>
+<td>火焰是否存在、火焰锋位置</td>
+</tr>
+<tr>
+<td><code>species_max</code> per 各组分</td>
+<td>排放、未燃烧燃料残余</td>
+</tr>
+<tr>
+<td><code>velocity_max</code>, <code>velocity_at_outlet</code></td>
+<td>是否回流、出口流速</td>
+</tr>
+<tr>
+<td><code>pressure_drop_inlet_outlet</code></td>
+<td>压损</td>
+</tr>
+<tr>
+<td><code>wall_heat_flux_per_patch</code></td>
+<td>壁面热负荷</td>
+</tr>
+<tr>
+<td><code>residual_drop_orders_per_var</code></td>
+<td>收敛性</td>
+</tr>
+<tr>
+<td><code>mass_flow_in</code>, <code>mass_flow_out</code></td>
+<td>质量守恒检查</td>
+</tr>
+<tr>
+<td><code>courant_max</code></td>
+<td>数值稳定性</td>
+</tr>
+<tr>
+<td><code>turbulence_intensity</code></td>
+<td>湍流强度</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>
+<p><strong>Tier 5 规则 YAML 是外挂可加载</strong>：用户可以新增 <code>extinction.yaml</code> 不改 sim-parse 代码，规则文件遵守约定 schema</p>
+</li>
+<li>
+<p><strong>输出包含 provenance</strong>：每个字段标记来自哪个 Tier 哪条 Path，方便 Agent 信任度评估</p>
+</li>
+</ol>
+<h3 id="113知识库三档来源">11.3 知识库三档来源</h3>
+<p>sim-knowledge 内容来源（<strong>不在 sim-parse 内，仅供参考</strong>）：</p>
+<table>
+<thead>
+<tr>
+<th>档</th>
+<th>谁写</th>
+<th>占比</th>
+<th>准确率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Gold</strong></td>
+<td>人写 + 人审</td>
+<td>~20%</td>
+<td>最高</td>
+</tr>
+<tr>
+<td><strong>Silver</strong></td>
+<td>LLM 起草 + 人审</td>
+<td>~50%</td>
+<td>高</td>
+</tr>
+<tr>
+<td><strong>Bronze</strong></td>
+<td>用户查询自动提议 + 人审</td>
+<td>~30%</td>
+<td>中</td>
+</tr>
+</tbody>
+</table>
+<p>冷启动需要的人工投入：~4-6 周覆盖单个物理域（如燃烧）。具体见 sim-knowledge 自己的设计文档。</p>
+<hr />
+<h2 id="12QOI演化闭环">12. QOI 演化闭环</h2>
+<p><strong>注意</strong>：本节描述的闭环跨越 sim-parse / sim-knowledge / Query Agent / 人工审核四个组件。sim-parse 在闭环中扮演的角色：<strong>消费固化后的规则 YAML，重跑全库填充新字段</strong>。</p>
+<h3 id="121闭环角色与流程">12.1 闭环角色与流程</h3>
+<div class="codehilite"><pre><span></span><code>[Day 1] 用户首次问 &quot;哪些案例熄火了？&quot;
+   │
+   ▼
+① Query Agent 临场推断 → 答案 + reasoning trace
+   │
+   ▼
+② Query Log 记录：{ question, criterion_used, result_count, trace }
+   │
+[Day 1~30] 100 个用户问同一问题（重复劳动 + 不一致风险）
+   │
+   ▼
+[每周] Promotion Pipeline 跑：
+③ 读 Query Log → 语义聚类 → 识别热点 intent
+   ↓
+④ 取最常用判据 → 在 labeled_cases 上校准 → 通过则提议固化
+   ↓
+⑤ 自动开 PR 到 sim-knowledge/physics/&lt;domain&gt;/criteria.yaml
+   │
+   ▼
+⑥ Curator (人) 审核 PR → merge
+   │
+   ▼
+⑦ Re-ingest Worker：sim-parse 用新 YAML 重跑全库
+   - Tier 5 多了 is_extinguished 字段
+   - Neo4j / Parquet 加列
+   │
+   ▼
+[Day 30+] 再问同问题
+⑧ Query Agent 看到 schema 已有 is_extinguished →
+   不再临场推断，直接 WHERE is_extinguished = TRUE
+</code></pre></div>
+
+<h3 id="122simparse在闭环中的角色">12.2 sim-parse 在闭环中的角色</h3>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>sim-parse 负责吗</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>①②③④ Agent 临场推断 + 日志 + 提议</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>⑤ 自动开 PR</td>
+<td>❌（sim-knowledge 仓库的 CI）</td>
+</tr>
+<tr>
+<td>⑥ 人审</td>
+<td>❌（Curator）</td>
+</tr>
+<tr>
+<td>⑦ <strong>Re-ingest（用新规则重跑）</strong></td>
+<td>✅ —— sim-parse 在 Phase 1 就要支持这个</td>
+</tr>
+<tr>
+<td>⑧ 直接查询</td>
+<td>❌（数据库 / 数据湖）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>承诺</strong>：sim-parse 的 <code>parse_case()</code> 必须支持 <code>qoi_rules_path=...</code> 参数，让 Re-ingest Worker 用新版 YAML 重跑全库。</p>
+<hr />
+<h2 id="13输出Schema">13. 输出 Schema</h2>
+<h3 id="131主输出dictJSON">13.1 主输出（dict / JSON）</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;case_root&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/data/case_run023&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;case_hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;ingested_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-27T10:30:00Z&quot;</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nt">&quot;tier_1_identify&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;openfoam&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;solver&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reactingFoam&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v2212&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;layout&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;single-region&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;decomposed&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;lagrangian&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nt">&quot;tier_2_inventory&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;time_steps&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mi">5000</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;variables&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;U&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;p&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;T&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CO&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CO2&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;scripts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Allrun&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Allclean&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;log_files&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;log.blockMesh&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;log.reactingFoam&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nt">&quot;tier_3_metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;application&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reactingFoam&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;mesh_cells&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3466</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;turbulence_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kEpsilon&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;combustion_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EDC&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;boundaries&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;inletfuel&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;patch&quot;</span><span class="p">}],</span>
+<span class="w">    </span><span class="nt">&quot;_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nt">&quot;tier_4_field_stats&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;variable_ranges&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;T&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">292</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;max&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2350</span><span class="p">}},</span>
+<span class="w">    </span><span class="nt">&quot;bounding_box&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;x&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.19</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;y&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">-0.008</span><span class="p">,</span><span class="w"> </span><span class="mf">0.008</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;z&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">-0.02</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0</span><span class="p">]},</span>
+<span class="w">    </span><span class="nt">&quot;_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nt">&quot;tier_5_qoi&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;variable&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;max_temperature&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2350</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;unit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;K&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tier_4.T.max&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;variable&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;is_extinguished&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;unit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span><span class="p">,</span>
+<span class="w">     </span><span class="nt">&quot;evidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;low_heat_release&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">9.8e8</span><span class="p">}],</span>
+<span class="w">     </span><span class="nt">&quot;rule_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;extinction.yaml@v3&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+
+<span class="w">  </span><span class="nt">&quot;field_provenance&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;chemistry_mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GRI-Mech 3.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;B&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MED&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;physics_class&quot;</span><span class="p">:</span><span class="w">       </span><span class="p">{</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;combustion&quot;</span><span class="p">,</span><span class="w">   </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;C&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;LOW&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;log.reactingFoam not found at top level, looked in processor*/log.reactingFoam&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="132QOI长表Parquetschema">13.2 QOI 长表（Parquet schema）</h3>
+<table>
+<thead>
+<tr>
+<th>列</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>case_hash</code></td>
+<td>str</td>
+<td>算例唯一 ID</td>
+</tr>
+<tr>
+<td><code>solver</code></td>
+<td>str</td>
+<td>"openfoam" / "fluent" / ...</td>
+</tr>
+<tr>
+<td><code>variable</code></td>
+<td>str</td>
+<td>受控词表名 (<code>lift_coefficient</code>)</td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td>float / bool</td>
+<td></td>
+</tr>
+<tr>
+<td><code>unit</code></td>
+<td>str</td>
+<td>UDUNITS-2 字符串</td>
+</tr>
+<tr>
+<td><code>region</code></td>
+<td>str?</td>
+<td>选填</td>
+</tr>
+<tr>
+<td><code>time</code></td>
+<td>float?</td>
+<td>选填（稳态 null）</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>str</td>
+<td>来源描述</td>
+</tr>
+<tr>
+<td><code>path</code></td>
+<td>str</td>
+<td>'A'/'B'/'C'</td>
+</tr>
+<tr>
+<td><code>rule_version</code></td>
+<td>str?</td>
+<td>YAML 规则版本号（用于审计）</td>
+</tr>
+<tr>
+<td><code>evidence</code></td>
+<td>json?</td>
+<td>投票判据的证据（针对布尔 QOI）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="133物理映射表schema">13.3 物理映射表 schema</h3>
+<p><code>core/canonical/variable_dict.yaml</code>：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">lift_coefficient</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;升力系数&quot;</span>
+<span class="w">  </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
+<span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">openfoam</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postProcessing/forces/forceCoeffs.dat&quot;</span><span class="p p-Indicator">,</span><span class="nt"> column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Cl&quot;</span><span class="p p-Indicator">,</span><span class="nt"> aggregator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;last&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">fluent</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;report-cl.out&quot;</span><span class="p p-Indicator">,</span><span class="nt"> column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lift&quot;</span><span class="p p-Indicator">,</span><span class="nt"> aggregator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;last&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">cgns</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">flow_solution_attr</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;LiftCoefficient&quot;</span><span class="p p-Indicator">}</span>
+
+<span class="nt">max_temperature</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;最大温度&quot;</span>
+<span class="w">  </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;K&quot;</span>
+<span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">openfoam</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;T&quot;</span><span class="p p-Indicator">,</span><span class="nt"> aggregator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;max&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">fluent</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;temperature&quot;</span><span class="p p-Indicator">,</span><span class="nt"> aggregator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;max&quot;</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="14API设计">14. API 设计</h2>
+<h3 id="141PythonAPI">14.1 Python API</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sim_parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_case</span><span class="p">,</span> <span class="n">to_vtu</span><span class="p">,</span> <span class="n">register_parser</span>
+
+<span class="c1"># 主入口：返回完整 dict</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">parse_case</span><span class="p">(</span>
+    <span class="n">case_root</span><span class="p">,</span>                       <span class="c1"># str | Path</span>
+    <span class="n">target_tier</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>                 <span class="c1"># 1-7</span>
+    <span class="n">discovery</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>              <span class="c1"># &quot;auto&quot; | &quot;on&quot; | &quot;off&quot;</span>
+    <span class="n">force_solver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>             <span class="c1"># str | None</span>
+    <span class="n">force_path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>               <span class="c1"># &quot;A&quot; | &quot;B&quot; | None</span>
+    <span class="n">qoi_rules_path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>           <span class="c1"># 外挂 YAML 路径，为 Re-ingest 闭环服务</span>
+<span class="p">)</span>
+
+<span class="c1"># 单 Tier 调用（精细控制）</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sim_parse.tiers</span><span class="w"> </span><span class="kn">import</span> <span class="n">tier1</span><span class="p">,</span> <span class="n">tier2</span><span class="p">,</span> <span class="n">tier3</span><span class="p">,</span> <span class="n">tier4</span>
+<span class="n">identity</span> <span class="o">=</span> <span class="n">tier1</span><span class="o">.</span><span class="n">identify</span><span class="p">(</span><span class="n">case_root</span><span class="p">)</span>
+<span class="n">inventory</span> <span class="o">=</span> <span class="n">tier2</span><span class="o">.</span><span class="n">inventory</span><span class="p">(</span><span class="n">case_root</span><span class="p">,</span> <span class="n">identity</span><span class="p">)</span>
+
+<span class="c1"># Tier 6 单独入口</span>
+<span class="n">vtu_path</span> <span class="o">=</span> <span class="n">to_vtu</span><span class="p">(</span>
+    <span class="n">case_root</span><span class="p">,</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>                     <span class="c1"># None = 最后时间步</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>                   <span class="c1"># None = 全部</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>                   <span class="c1"># None = 临时文件</span>
+<span class="p">)</span>
+
+<span class="c1"># 插件注册</span>
+<span class="nd">@register_parser</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_solver&quot;</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyParser</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">identify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span> <span class="k">pass</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span> <span class="k">pass</span>
+</code></pre></div>
+
+<h3 id="142CLI">14.2 CLI</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 默认输出 Tier 1-3 简要</span>
+simparse<span class="w"> </span>&lt;<span class="k">case</span>&gt;
+
+<span class="c1"># 指定深度 + JSON 输出</span>
+simparse<span class="w"> </span>&lt;<span class="k">case</span>&gt;<span class="w"> </span>--tier<span class="w"> </span><span class="m">4</span><span class="w"> </span>--json<span class="w"> </span>&gt;<span class="w"> </span>out.json
+
+<span class="c1"># 仅 Tier 5 QOI 长表，输出 Parquet</span>
+simparse<span class="w"> </span>&lt;<span class="k">case</span>&gt;<span class="w"> </span>--tier<span class="w"> </span><span class="m">5</span><span class="w"> </span>--as<span class="w"> </span>parquet<span class="w"> </span>-o<span class="w"> </span>qoi.parquet
+
+<span class="c1"># Tier 6 导出 VTU</span>
+simparse<span class="w"> </span>&lt;<span class="k">case</span>&gt;<span class="w"> </span>--tier<span class="w"> </span><span class="m">6</span><span class="w"> </span>--time<span class="w"> </span><span class="m">5000</span><span class="w"> </span>--vars<span class="w"> </span>U,T,p<span class="w"> </span>-o<span class="w"> </span><span class="k">case</span>.vtu
+
+<span class="c1"># 涉密环境模式</span>
+simparse<span class="w"> </span>&lt;<span class="k">case</span>&gt;<span class="w"> </span>--discovery<span class="o">=</span>off
+
+<span class="c1"># 调试：强制走某条 path</span>
+simparse<span class="w"> </span>&lt;<span class="k">case</span>&gt;<span class="w"> </span>--force-path<span class="o">=</span>B
+
+<span class="c1"># Re-ingest 闭环：用外挂 YAML 重跑</span>
+simparse<span class="w"> </span>&lt;<span class="k">case</span>&gt;<span class="w"> </span>--tier<span class="w"> </span><span class="m">5</span><span class="w"> </span>--qoi-rules<span class="w"> </span>/path/to/new_rules.yaml
+</code></pre></div>
+
+<hr />
+<h2 id="15项目结构">15. 项目结构</h2>
+<h3 id="151simparse自身结构">15.1 sim-parse 自身结构</h3>
+<div class="codehilite"><pre><span></span><code>sim-parse/                                  # d:\Git\GitBubProj\simcli\sim-parse\
+├── pyproject.toml                          # 依赖：vtk, numpy, h5py, pyyaml
+├── README.md
+├── CHANGELOG.md
+├── src/sim_parse/
+│   ├── __init__.py                         # 暴露 parse_case / to_vtu / register_parser
+│   ├── core/
+│   │   ├── tiers.py                        # Tier 1-7 dataclass 协议
+│   │   ├── cascade.py                      # Dispatcher
+│   │   ├── registry.py                     # 求解器+插件注册表
+│   │   ├── provenance.py                   # 字段来源追踪
+│   │   ├── errors.py                       # ParseError, never raise contract
+│   │   └── canonical/
+│   │       ├── variable_dict.yaml          # 物理映射表
+│   │       ├── unit_map.yaml               # UDUNITS-2
+│   │       └── qoi_rules/                  # Tier 5 规则
+│   │           ├── extinction.yaml         # 熄火判据
+│   │           ├── convergence.yaml        # 收敛判据
+│   │           └── ...
+│   ├── solvers/                            # Path A
+│   │   ├── openfoam/
+│   │   │   ├── tier1_identify.py
+│   │   │   ├── tier2_inventory.py
+│   │   │   ├── tier3_metadata.py
+│   │   │   ├── tier4_field_stats.py
+│   │   │   ├── tier5_qoi.py                # Phase 2
+│   │   │   ├── tier6_export.py             # Phase 2
+│   │   │   ├── _foam_dict.py               # 字典文本 parser 工具
+│   │   │   ├── _polymesh.py                # owner header / boundary 解析
+│   │   │   └── families/
+│   │   │       ├── _registry.yaml
+│   │   │       ├── reactingFoam.py
+│   │   │       └── simpleFoam.py
+│   │   ├── cgns/                           # Phase 2
+│   │   ├── fluent/                         # Phase 2
+│   │   └── lsdyna/                         # Phase 2
+│   ├── generic/                            # Path B
+│   │   ├── hdf5_dump.py
+│   │   ├── vtk_probe.py
+│   │   ├── text_log.py
+│   │   └── magic.py
+│   ├── discovery/                          # Path C (Phase 3, stub for Phase 1)
+│   │   ├── agent.py                        # 真实实现需要消费 sim-knowledge/formats
+│   │   ├── tools.py
+│   │   └── sandbox.py
+│   ├── cli/
+│   │   └── __main__.py                     # `python -m sim_parse` 入口
+│   └── adapters/
+│       └── vtk_io.py                       # VTK→numpy 共享工具
+├── tests/
+│   ├── conftest.py
+│   ├── unit/
+│   │   ├── test_tiers_protocol.py
+│   │   ├── test_cascade.py
+│   │   └── test_openfoam_dict_parser.py
+│   ├── integration/
+│   │   └── test_dlr_a_cavity.py            # Phase 1 验收
+│   └── fixtures/
+│       └── minimal_openfoam_case/          # 小 KB 级 fixture for CI
+└── docs/
+    ├── design.md                           # 本文档
+    ├── tier_reference.md
+    ├── adding_a_solver.md
+    └── solvers/
+        ├── openfoam.md
+        ├── cgns.md                         # Phase 2
+        ├── fluent.md                       # Phase 2
+        └── lsdyna.md                       # Phase 2
+</code></pre></div>
+
+<h3 id="152在simcliworkspace中的位置">15.2 在 simcli/ workspace 中的位置</h3>
+<div class="codehilite"><pre><span></span><code>d:\Git\GitBubProj\simcli\                   # 现有 workspace
+├── sim-cli/                                # 现有：runtime
+├── sim-skills/                             # 现有：求解器操作知识（markdown）
+├── sim-mcp/                                # 现有
+├── sim-parse/                              # 本方案
+└── sim-knowledge/                          # 拟建：物理+格式知识（YAML）
+    ├── physics/
+    │   ├── combustion/
+    │   ├── heat_transfer/
+    │   ├── turbulence/
+    │   ├── multiphase/
+    │   └── numerics/
+    ├── formats/
+    │   ├── hdf5/
+    │   ├── cgns/
+    │   ├── conventions/
+    │   └── playbooks/
+    ├── labeled_cases/
+    │   ├── combustion_extinction/
+    │   ├── convergence_failure/
+    │   └── ...
+    └── few_shot/
+</code></pre></div>
+
+<p>依赖方向：</p>
+<div class="codehilite"><pre><span></span><code>simgraph2 backend                ──►  sim-parse
+sim-cli runtime (可选)            ──►  sim-parse
+Query Agent (待建)                ──►  sim-parse + sim-knowledge
+Discovery Agent (在 sim-parse 内) ──►  sim-knowledge/formats
+sim-cli driver Agent              ──►  sim-skills
+</code></pre></div>
+
+<p><strong>sim-parse 不反向依赖任何上层</strong>。</p>
+<hr />
+<h2 id="16配套生态simknowledgeQueryAgentDiscoveryAgent">16. 配套生态：sim-knowledge / Query Agent / Discovery Agent</h2>
+<p><strong>这些是 sim-parse 之外的组件</strong>，本文档仅做指针式说明，详细设计留给各自的设计文档。</p>
+<h3 id="161simknowledge拟建仓库">16.1 sim-knowledge（拟建仓库）</h3>
+<p>YAML 结构化知识库，分两子域：</p>
+<h4 id="simknowledgephysics&lt;domain&gt;"><code>sim-knowledge/physics/&lt;domain&gt;/</code></h4>
+<p>物理判据知识库，被 Query Agent 消费。冷启动覆盖：</p>
+<ul>
+<li><code>combustion/</code> —— 燃烧（extinction / ignition / heat release）</li>
+<li><code>heat_transfer/</code> —— 传热（wall flux / Nusselt / temperature gradient）</li>
+<li><code>turbulence/</code> —— 湍流（intensity / dissipation rate / Re_t）</li>
+<li><code>multiphase/</code> —— 多相</li>
+<li><code>numerics/</code> —— 收敛 / 发散 / Courant / 守恒</li>
+</ul>
+<p>每个 domain 含：</p>
+<div class="codehilite"><pre><span></span><code>&lt;domain&gt;/
+├── criteria.yaml          # 判据库（intent → signals → rule → reference）
+├── variables.yaml         # 物理量 ↔ 求解器变量名 映射
+├── thresholds.yaml        # 不同燃料/压力的阈值表
+└── few_shot.json          # 推理示范
+</code></pre></div>
+
+<h4 id="simknowledgeformats&lt;format&gt;"><code>sim-knowledge/formats/&lt;format&gt;/</code></h4>
+<p>格式探索知识库，被 Discovery Agent (sim-parse Path C) 消费。冷启动覆盖：</p>
+<ul>
+<li><code>hdf5/</code> —— HDF5 通用结构识别</li>
+<li><code>cgns/</code> —— CGNS 标准</li>
+<li><code>conventions/</code> —— 跨求解器 log/CSV/目录命名约定</li>
+<li><code>playbooks/</code> —— "未知文件怎么探索"策略</li>
+<li><code>examples/</code> —— 历史成功识别案例（few-shot）</li>
+</ul>
+<h4 id="simknowledgelabeledcases"><code>sim-knowledge/labeled_cases/</code></h4>
+<p>人工标注的真值案例，是 §11 机制 #2（校准检验）的基础。每个 intent 至少 5-10 个：</p>
+<div class="codehilite"><pre><span></span><code>labeled_cases/
+├── combustion_extinction/
+│   ├── case_id_001/
+│   │   └── ground_truth.yaml: {is_extinguished: true, fuel: CH4}
+│   └── ...
+└── ...
+</code></pre></div>
+
+<h3 id="162QueryAgent拟建组件候选名simquery">16.2 Query Agent（拟建组件，候选名 sim-query）</h3>
+<p>接收用户自然语言问题（"哪些案例熄火了？"），输出查询结果 + reasoning trace。<strong>不在 sim-parse 内</strong>。</p>
+<p><strong>消费</strong>：sim-knowledge/physics + sim-parse 的 Tier 4/5 输出（通过数据湖或直接调用）</p>
+<p><strong>输出</strong>：Cypher / SQL / Python 查询 + 答案 + trace</p>
+<p><strong>关键约束</strong>：见 §11 五个准确性机制</p>
+<h3 id="163DiscoveryAgent在simparsePathC内">16.3 Discovery Agent（在 sim-parse Path C 内）</h3>
+<p>当 Path A/B 都失败时，LLM 驱动的探索 Agent。<strong>实现在 sim-parse 内，但消费外部 sim-knowledge/formats</strong>。</p>
+<p><strong>消费</strong>：sim-knowledge/formats + sandbox 工具集</p>
+<p><strong>输出</strong>：临时 inventory 字典 + 可能的 parser 升级建议（提议加进 sim-parse/solvers/ 或 sim-knowledge/formats/）</p>
+<hr />
+<h2 id="17求解器覆盖矩阵阶段交付">17. 求解器覆盖矩阵 &amp; 阶段交付</h2>
+<h3 id="171长期目标覆盖">17.1 长期目标覆盖</h3>
+<table>
+<thead>
+<tr>
+<th>求解器</th>
+<th>T1</th>
+<th>T2</th>
+<th>T3</th>
+<th>T4</th>
+<th>T5</th>
+<th>T6</th>
+<th>阶段</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OpenFOAM</strong></td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td><strong>Phase 1</strong></td>
+<td>用 DLR_A_cavity 验收</td>
+</tr>
+<tr>
+<td><strong>HDF5 通用</strong></td>
+<td>✅B</td>
+<td>✅B</td>
+<td>✅B</td>
+<td>⚠️B</td>
+<td>—</td>
+<td>—</td>
+<td><strong>Phase 1</strong></td>
+<td>h5py dump</td>
+</tr>
+<tr>
+<td><strong>CGNS</strong></td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>⚠️</td>
+<td>✅A</td>
+<td>Phase 2</td>
+<td>vtkCGNSReader</td>
+</tr>
+<tr>
+<td><strong>Fluent .cas/.dat</strong></td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>Phase 2</td>
+<td>vtkFLUENTReader</td>
+</tr>
+<tr>
+<td><strong>Fluent .cas.h5</strong></td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>Phase 2</td>
+<td>vtkFLUENTCFFReader</td>
+</tr>
+<tr>
+<td><strong>LS-DYNA</strong></td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>Phase 2</td>
+<td>vtkLSDynaReader</td>
+</tr>
+<tr>
+<td><strong>Tecplot PLT</strong></td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>⚠️</td>
+<td>✅A</td>
+<td>Phase 3</td>
+<td>vtkTecplotReader</td>
+</tr>
+<tr>
+<td><strong>EnSight Gold</strong></td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>⚠️</td>
+<td>✅A</td>
+<td>Phase 3</td>
+<td>vtkEnSightReader</td>
+</tr>
+<tr>
+<td><strong>Plot3D</strong></td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>⚠️</td>
+<td>✅A</td>
+<td>Phase 3</td>
+<td>vtkMultiBlockPLOT3DReader</td>
+</tr>
+<tr>
+<td><strong>Abaqus (.inp)</strong></td>
+<td>✅A</td>
+<td>✅A</td>
+<td>✅A</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>Phase 3</td>
+<td>仅文本输入卡</td>
+</tr>
+<tr>
+<td><strong>Abaqus (.odb)</strong></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>⚠️</td>
+<td>⚠️</td>
+<td>⚠️</td>
+<td>Phase 4</td>
+<td>需 odb2vtk 预转</td>
+</tr>
+<tr>
+<td><strong>MAPDL/Mechanical</strong></td>
+<td>⚠️</td>
+<td>⚠️</td>
+<td>⚠️</td>
+<td>⚠️</td>
+<td>⚠️</td>
+<td>⚠️</td>
+<td>Phase 4</td>
+<td>需 PyDPF</td>
+</tr>
+<tr>
+<td><strong>STAR-CCM+</strong></td>
+<td>⚠️</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>Phase 4</td>
+<td>需 macro 预导出</td>
+</tr>
+<tr>
+<td><strong>任意未知格式</strong></td>
+<td>✅C</td>
+<td>✅C</td>
+<td>⚠️C</td>
+<td>⚠️C</td>
+<td>❌</td>
+<td>❌</td>
+<td>Phase 3</td>
+<td>LLM Discovery</td>
+</tr>
+</tbody>
+</table>
+<h3 id="172Phase1+加Tier567交付✅已完成">17.2 Phase 1 + 加 Tier 5/6/7 交付 —— ✅ <strong>已完成</strong></h3>
+<p><strong>做（已交付）</strong>：
+- ✅ 项目骨架（pyproject.toml、目录结构、基础协议）
+- ✅ Tier 协议（<code>core/tiers.py</code> 数据类 + 字段计数器）
+- ✅ Dispatcher（<code>core/cascade.py</code> —— A→B→C 级联调度，<strong>支持 Tier 1-7 全部</strong>）
+- ✅ <strong>OpenFOAM 完整 Path A 实现</strong>：
+  - Tier 1 Identify / Tier 2 Inventory / Tier 3 Metadata / Tier 4 FieldStats（VTK）
+  - <strong>Tier 5 QOI</strong>：通用规则引擎 (<code>core/canonical/qoi_engine.py</code>) + 14 条内置规则 (<code>qoi_rules.yaml</code>) + <code>qoi_rules_path</code> 外挂
+  - <strong>Tier 6 VTU 导出</strong>：<code>vtkXMLUnstructuredGridWriter</code>，缓存到 <code>.simparse_cache/</code>
+  - <strong>Tier 7 Semantic</strong>：启发式引擎（<code>discovery/semantic.py</code>），输出 physics_class / time_semantics / run_health / complexity_class / nl_summary（中文）
+- ✅ HDF5 通用 Path B（Tier 1+2，含 magic-byte 识别 + h5py dump + CGNS/Fluent CFF 子识别）
+- ✅ Path C <strong>stub</strong>（接口定义、<code>{"unsupported": True}</code> 返回 —— 真实 LLM 实现 Phase 3+）
+- ✅ CLI（<code>python -m sim_parse &lt;case&gt; --tier N --json</code> + <code>simparse</code> entry point + <code>to_vtu()</code> API）
+- ✅ 用 DLR_A_cavity 跑 31 个 OpenFOAM 测试 + 7 个 Path B 测试 + 3 个 labeled_cases + 12 个 Tier 5/6/7 测试 = <strong>63 测试</strong></p>
+<p><strong>不做（按计划，Phase 3+ 才做）</strong>：
+- 真实的 Path C LLM Discovery（sim-knowledge/formats 还没建）
+- Tier 7 LLM 上行（heuristic 引擎已可用，LLM 是可选升级）
+- sim-knowledge 仓库内容完整化（仅 labeled_cases 雏形）</p>
+<p><strong>验收标准（实测）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>标准</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>simparse DLR_A_cavity --tier 4 --json</code> 正确输出 ≥ 30 个字段</td>
+<td>✅ 实测 ~50 字段</td>
+</tr>
+<tr>
+<td>2</td>
+<td>字段值与手工分析一致（mesh_cells=3466、reactingFoam、kEpsilon、EDC、GRI-Mech 等）</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>3</td>
+<td>喂入空目录返回 <code>{"format": null}</code> 而不抛异常</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>4</td>
+<td>喂入 <code>.h5</code> 文件触发 Path B 返回 dataset 列表</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>--qoi-rules</code> 加载外挂 YAML 实化解析</td>
+<td>✅ Tier 5 引擎已支持</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>pytest -q</code> 全绿</td>
+<td>✅ <strong>63/63 passed</strong></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Tier 5 QOI 输出长表</td>
+<td>✅ 14 条记录（mesh_cells、max_temperature、is_extinguished 等）</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Tier 6 VTU 导出可被 ParaView 打开</td>
+<td>✅ 149 KB，n_cells=3466</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Tier 7 输出 5 个语义字段 + 中文摘要</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p><strong>实测关键指标</strong>（DLR_A_cavity）：</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>实测值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tier 1+2+3 解析耗时</td>
+<td>~80 ms</td>
+</tr>
+<tr>
+<td>Tier 4 (VTK) 解析耗时</td>
+<td>~1.5 s</td>
+</tr>
+<tr>
+<td>Tier 5 QOI 引擎耗时</td>
+<td>~1 ms</td>
+</tr>
+<tr>
+<td>Tier 6 VTU 导出耗时</td>
+<td>~1 s（写 149 KB 文件）</td>
+</tr>
+<tr>
+<td>Tier 7 启发式</td>
+<td>&lt; 1 ms</td>
+</tr>
+<tr>
+<td>提取字段总数</td>
+<td>~70（含 Tier 5 14 条 QOI + Tier 7 5 个语义字段）</td>
+</tr>
+<tr>
+<td>物理量识别准确性</td>
+<td>全部命中：T_max=1998K, Qdot_max=7.7e8, U_max=43.6 m/s, OH_max=3.1e-3</td>
+</tr>
+<tr>
+<td>labeled_cases 校准检验</td>
+<td>✅ extinction 判据投票结果与 ground truth 一致（is_extinguished=false）</td>
+</tr>
+<tr>
+<td>Tier 7 关键判定</td>
+<td>physics_class=combustion+heat+flow / time_semantics=pseudo_time_LTS / run_health=healthy</td>
+</tr>
+</tbody>
+</table>
+<h3 id="173Phase246周">17.3 Phase 2（4-6 周）</h3>
+<ul>
+<li>Tier 5 QOI 长表完整化（OpenFOAM 优先）</li>
+<li>Tier 6 VTU 导出（OpenFOAM）</li>
+<li>加 CGNS / Fluent / LS-DYNA 三个求解器的 Path A</li>
+<li>物理映射表 YAML 实化（OpenFOAM + Fluent 共同的 ~20 个 QOI）</li>
+<li>插件注册机制（Path D）</li>
+<li>Parquet 输出格式</li>
+</ul>
+<h3 id="174Phase3+弹性">17.4 Phase 3+（弹性）</h3>
+<ul>
+<li>Tecplot / EnSight / Plot3D</li>
+<li>Abaqus .inp 解析</li>
+<li>Path C 真实实现（LLM Discovery） —— 需要 sim-knowledge/formats 先建</li>
+<li>Tier 7 Semantic（接外部 LLM）</li>
+</ul>
+<hr />
+<h2 id="18依赖与环境">18. 依赖与环境</h2>
+<h3 id="181运行时依赖">18.1 运行时依赖</h3>
+<table>
+<thead>
+<tr>
+<th>包</th>
+<th>版本</th>
+<th>必需？</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>python</code></td>
+<td>≥ 3.10</td>
+<td>✅</td>
+<td>type hints</td>
+</tr>
+<tr>
+<td><code>numpy</code></td>
+<td>≥ 1.24</td>
+<td>✅</td>
+<td>数组</td>
+</tr>
+<tr>
+<td><code>pyyaml</code></td>
+<td>≥ 6.0</td>
+<td>✅</td>
+<td>物理映射表 / qoi_rules</td>
+</tr>
+<tr>
+<td><code>vtk</code></td>
+<td>≥ 9.3</td>
+<td>Tier 4-6 需要</td>
+<td>OpenFOAM/Fluent/CGNS/LS-DYNA reader</td>
+</tr>
+<tr>
+<td><code>h5py</code></td>
+<td>≥ 3.0</td>
+<td>Path B HDF5 需要</td>
+<td>通用 HDF5</td>
+</tr>
+<tr>
+<td><code>httpx</code></td>
+<td>≥ 0.25</td>
+<td>Path C 需要</td>
+<td>LLM client（可选）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tier 1-3 仅依赖 numpy + pyyaml + stdlib</strong>，无 VTK 也能跑。</p>
+<h3 id="182开发依赖">18.2 开发依赖</h3>
+<p><code>pytest</code>, <code>pytest-cov</code>, <code>ruff</code>, <code>mypy</code></p>
+<h3 id="183测试环境">18.3 测试环境</h3>
+<p>用户已有 <code>D:\TOOL\Conda\conda\envs\PostProcessTool</code>：
+- VTK 9.4.1 ✅
+- numpy 2.4.4 ✅
+- h5py 3.16.0 ✅
+- 缺 <code>pyyaml</code> —— 安装一次即可</p>
+<p><code>pyproject.toml</code> 中 <code>[project.optional-dependencies]</code>：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">[project.optional-dependencies]</span>
+<span class="n">fields</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;vtk&gt;=9.3&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;h5py&gt;=3.0&quot;</span><span class="p">]</span>
+<span class="n">discovery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;httpx&gt;=0.25&quot;</span><span class="p">]</span>
+<span class="n">all</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;sim-parse[fields,discovery]&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<hr />
+<h2 id="19关键设计决策">19. 关键设计决策</h2>
+<table>
+<thead>
+<tr>
+<th>决策</th>
+<th>选择</th>
+<th>替代方案</th>
+<th>选择理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>项目位置</td>
+<td>sim-cli/ workspace 兄弟目录</td>
+<td>sim-cli 内部 / 独立 git repo</td>
+<td>解耦、依赖最小、未来易拆</td>
+</tr>
+<tr>
+<td>包名</td>
+<td><code>sim_parse</code>（Python）/ <code>sim-parse</code>（仓库）</td>
+<td><code>simparse</code>/<code>solver-parse</code>/<code>cae-parse</code></td>
+<td>与 sim-cli family 一致</td>
+</tr>
+<tr>
+<td>VTK 用法</td>
+<td>raw <code>vtk</code> (vtkmodules.*)</td>
+<td><code>pyvista</code> 高层封装</td>
+<td>当前环境无 pyvista，避免新增 50 个间接依赖</td>
+</tr>
+<tr>
+<td>LLM 在 paradigm 中的位置</td>
+<td>Path C + Tier 7（可选、可关闭，且实现需消费外部 sim-knowledge）</td>
+<td>全 LLM-driven / 全静态</td>
+<td>平衡覆盖率和确定性</td>
+</tr>
+<tr>
+<td>Tier 边界</td>
+<td>看是否解码数组 / 是否查映射表 / 是否推断</td>
+<td>按数据类型分 / 按求解器分</td>
+<td>边界规则简单可记</td>
+</tr>
+<tr>
+<td>错误契约</td>
+<td>永不抛 + 字段填 None + provenance 标记</td>
+<td>抛异常让上层捕获</td>
+<td>simgraph2 硬性要求</td>
+</tr>
+<tr>
+<td>测试数据</td>
+<td>引用绝对路径 + 小 fixture for CI</td>
+<td>全部拷贝进仓库</td>
+<td>大 case 不进仓库，小 fixture 保证 CI</td>
+</tr>
+<tr>
+<td>知识库放哪</td>
+<td>独立 sim-knowledge 仓库（physics + formats 两子域）</td>
+<td>嵌入 sim-parse / 嵌入 sim-skills</td>
+<td>维护者画像不同；跨求解器复用</td>
+</tr>
+<tr>
+<td>Agent 不在 sim-parse 内</td>
+<td>Query Agent / Discovery Agent 是独立组件</td>
+<td>嵌入 sim-parse</td>
+<td>sim-parse 保持纯净的 per-case 静态提取</td>
+</tr>
+<tr>
+<td>QOI 演化采用闭环</td>
+<td>用户查询驱动 QOI 固化（Bronze 档来源）</td>
+<td>一次性预定义所有 QOI</td>
+<td>不可能猜全用户问题</td>
+</tr>
+<tr>
+<td>物理映射表外挂可加载</td>
+<td><code>qoi_rules_path</code> 参数 + 外挂 YAML</td>
+<td>写死在 sim-parse 代码里</td>
+<td>闭环 Re-ingest 需要</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="20待决策项">20. 待决策项</h2>
+<p>启动前需要确认（<strong>已确认</strong>项标 ✅）：</p>
+<ol>
+<li>✅ <strong>三轴架构</strong>：sim-skills / sim-parse / sim-knowledge 三仓并立</li>
+<li>✅ <strong>sim-knowledge 子域</strong>：physics + formats 两子域并放（不再讨论是否合并）</li>
+<li>✅ <strong>包名</strong>：<code>sim_parse</code> (Python) / <code>sim-parse</code> (仓库)</li>
+<li>✅ <strong>VTK 用法</strong>：raw vtk，不依赖 pyvista</li>
+<li>✅ <strong>Tier 边界</strong>：本文档 §7 模糊字段表</li>
+<li><strong>CLI 命令名</strong>：<code>simparse</code>（短）/ <code>sim-parse</code>（与包名一致） —— 待确认</li>
+<li><strong>测试 case 引用方式</strong>：<code>tests/integration/</code> 用绝对路径 <code>D:\Git\SimGraph2\test_data\...</code>（CI 跳过）；<code>tests/fixtures/</code> 放小 KB fixture —— 待确认</li>
+<li><strong>Phase 1 求解器范围</strong>：建议只 OpenFOAM —— 待确认</li>
+<li><strong>Phase 1 完成定义</strong>：本文档 §17.2 验收标准 6 条 —— 待确认</li>
+<li><strong>是否要 git init sim-parse</strong>：独立 git 历史 vs 跟 simcli workspace 共享 —— 待确认</li>
+<li><strong>sim-knowledge 是否同步建</strong> —— 还是先 Phase 1 用 sim-parse 自带最小规则 —— 待确认（建议后者）</li>
+</ol>
+<hr />
+<h2 id="21风险与开放问题">21. 风险与开放问题</h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>缓解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenFOAM 字典文件方言多（v2206 vs v2406 略有差异）</td>
+<td>在 <code>_foam_dict.py</code> 做容错；先按 v2212+ 做</td>
+</tr>
+<tr>
+<td><code>vtkOpenFOAMReader</code> 需要 <code>.foam</code> marker 文件</td>
+<td>自动创建 <code>&lt;case_name&gt;.foam</code></td>
+</tr>
+<tr>
+<td>字段命名争议（用 OpenFOAM 原生名 <code>U</code> 还是受控名 <code>velocity</code>）</td>
+<td>Tier 4 输出原生名；Tier 5 才查表换受控名</td>
+</tr>
+<tr>
+<td>Path C 沙盒安全性（LLM 生成代码注入风险）</td>
+<td><code>multiprocessing</code> + 文件系统 read-only mount + 网络断开；Phase 3 再细化</td>
+</tr>
+<tr>
+<td>性能：100 个算例批量回填</td>
+<td>Tier 1-3 纯 Python ≤ 50 ms/case → 100 个 ~5 秒；Tier 4 加上 VTK ~2-10 秒/case</td>
+</tr>
+<tr>
+<td>物理映射表准确性</td>
+<td>Phase 2 实化时 cross-check 多个真实算例；闭环逐步精化</td>
+</tr>
+<tr>
+<td>Agent 临场推断不一致</td>
+<td>不在 sim-parse 责任内；由 sim-knowledge 提供结构化知识 + labeled_cases 校准</td>
+</tr>
+<tr>
+<td>Re-ingest 性能（重跑全库）</td>
+<td>增量重跑：只跑触发 qoi_rules 变化的 case</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="22不在本方案范围">22. 不在本方案范围</h2>
+<p>为防止后续误解，这些是<strong>未来可以做但当前明确不做</strong>的事：</p>
+<p><strong>结构性不做</strong>（属于其他组件）：
+- 用户问题理解（Query Agent 的事）
+- 跨案例聚合查询（数据库的事）
+- 物理判据知识维护（sim-knowledge 的事）
+- 格式探索知识维护（sim-knowledge 的事）
+- 求解器运行控制（sim-cli 的事）</p>
+<p><strong>功能性暂不做</strong>：
+- 监控目录 / inotify 触发（simgraph2 的事）
+- 增量解析（同 case 改动后重解析）
+- 解析结果缓存层（Redis / 本地 KV）
+- 多线程 / 多进程批处理（用户自己用 <code>joblib</code> 包一层）
+- 异常队列管理（simgraph2 的事）
+- Web UI / 可视化前端
+- REST 服务化</p>
+<hr />
+<h2 id="23变更历史">23. 变更历史</h2>
+<ul>
+<li><strong>v0.1</strong> — 初版方案（架构 + Tier + Path + Dispatcher + Schema + Phase）</li>
+<li><strong>v0.2</strong> — 加 §7 信息族目录（OpenFOAM 九族明细），明确每族提取哪些字段、来源、Tier 归属</li>
+<li><strong>v0.3</strong> — 三轴架构整合：</li>
+<li>新增 §2 三轴架构（操作 / 解析 / 解释）作为大图</li>
+<li>新增 §11 Agent 临场推断的支撑机制（5 机制）</li>
+<li>新增 §12 QOI 演化闭环（8 步骤）</li>
+<li>新增 §16 配套生态（sim-knowledge / Query Agent / Discovery Agent 指针式说明）</li>
+<li>§4 非目标 增加"Agent / 知识库 / 跨案例查询不在 sim-parse 范围"</li>
+<li>§9 Path C 明确依赖 sim-knowledge/formats</li>
+<li>§14 API 增加 <code>qoi_rules_path</code> 参数（为 Re-ingest 闭环留接口）</li>
+<li>§15 项目结构 显示 sim-knowledge 兄弟目录</li>
+<li>§19 决策 增加"知识库独立"、"Agent 不在 sim-parse 内"、"QOI 演化闭环" 三条</li>
+<li>§20 待决策 部分项标记已确认</li>
+<li><strong>v0.4</strong> — 三仓显式化（核心架构）：</li>
+<li><strong>§2 重写</strong>：从"3 个生命周期阶段"改为"<strong>3 个动作 × 3 个知识库</strong>"为主轴<ul>
+<li>§2.1 三动作三仓总表（跑/读/判 → sim-skills / sim-knowledge/formats / sim-knowledge/physics）</li>
+<li>§2.2 三仓关系图（layered view：动作 → 知识库 → Agent → 时机）</li>
+<li>§2.3 sim-parse 在三轴中的位置（"代码框架"而非"知识库"）</li>
+<li>§2.4 三动作正交性论证</li>
+<li>§2.5 三仓详细对照（11 维度）</li>
+<li>§2.6 关键边界（5 条）</li>
+<li>§2.7 完整生命周期举例（4 个 Day 串联三动作）</li>
+</ul>
+</li>
+<li>此节升级为<strong>全文档最重要的一节</strong>，后续所有边界讨论都引用这里</li>
+<li><strong>v0.9</strong> — 第二个求解器 Fluent 接入（架构验证）：</li>
+<li>加 <code>solvers/fluent/</code> —— Tier 1/2/3/4/6 完整实现</li>
+<li>三种 Fluent 子格式全覆盖：<ul>
+<li><code>legacy</code>（.cas + .dat 二进制）</li>
+<li><code>legacy_gz</code>（.cas.gz + .dat.gz，gzip 压缩，VTK 透明解压）</li>
+<li><code>cff</code>（.cas.h5 + .dat.h5，HDF5 后端，V19+）</li>
+</ul>
+</li>
+<li>dispatcher 同时支持目录式（OpenFOAM）和单文件式（Fluent）case_root</li>
+<li>solver 优先级：openfoam=80, fluent=70（同目录有两者标记时 OpenFOAM 赢）</li>
+<li>17 个 Fluent Tier 1 单测（合成 .cas fixtures 覆盖三种子格式 + .dat 配对 + 拒绝假阳性）</li>
+<li>sim-knowledge/formats/fluent quirks 加 gzip transparent reading 条目</li>
+<li><strong>测试 87 → 104 全过</strong>（多 17 个 Fluent 测试）</li>
+<li><strong>v0.8</strong> — Phase 2 表达式判据 + sim-knowledge v0.2 内容化：</li>
+<li>加 <code>core/canonical/safe_eval.py</code> —— 受限 ast eval（数值运算 + 白名单函数 + 沙盒）</li>
+<li>qoi_engine 加 <code>expression</code> 规则类型 + voting 判据中的 per-criterion 表达式支持</li>
+<li><strong>sim-knowledge 集成翻转</strong>：sim-knowledge 物理判据现在<strong>覆盖</strong> sim-parse 自带规则（之前是相反）</li>
+<li>Tier 3 OpenFOAM 提取器加 BC 入口值（<code>bc.T_inlet</code>、<code>bc.U_inlet</code>）从 0/<var> boundaryField</li>
+<li>真物理 <code>is_extinguished</code> 判据：<code>T_max - T_inlet &lt; 100</code> 替代之前的 <code>T.max &lt; 400</code> 妥协</li>
+<li>新增表达式 QOI：<code>temperature_excess_above_inlet</code>、<code>heat_release_collapse_ratio</code></li>
+<li>sim-knowledge 内容化：5 个物理域 25 个 intent + 8 种格式（含 Tecplot/Plot3D/Abaqus.inp）</li>
+<li>PyYAML 1.1 quirk 修复：自动 coerce <code>1.0e6</code> → 1e6（YAML 1.1 把 <code>1.0e6</code> 当字符串）</li>
+<li>测试 63 → <strong>87 全过</strong>（24 个新 safe_eval 单测 + 4 个表达式集成）</li>
+<li><strong>v0.7</strong> — Tier 5/6/7 全部实现：</li>
+<li><strong>Tier 5 QOI</strong>：通用规则引擎 (<code>core/canonical/qoi_engine.py</code>) + 14 条规则 (<code>qoi_rules.yaml</code>) 覆盖 mesh / 场统计 / 投票判据</li>
+<li><strong>Tier 6 VTU 导出</strong>：<code>vtkXMLUnstructuredGridWriter</code>，<code>to_vtu()</code> 公开 API</li>
+<li><strong>Tier 7 Semantic</strong>：启发式引擎，输出 physics_class / time_semantics / run_health / complexity_class / nl_summary</li>
+<li>所有 7 个 Tier 全部可被 <code>--tier N</code> 参数触发，CLI 不再有"Tier 5/6/7 静默跳过"</li>
+<li>测试从 51 → <strong>63 全过</strong></li>
+<li>DLR_A_cavity 完整测试：QOI 14 条 / VTU 149KB / 语义识别 LTS pseudo-time</li>
+<li><strong>v0.6</strong> — 加"新读者基础概念速览（FAQ）"章节（在 TOC 后、§1 前）：5 个问题用大白话解释 Tier / Dispatcher / 模块结构 / sim-knowledge / labeled_cases，每条带深度章节指针</li>
+<li><strong>v0.5</strong> — Phase 1 实施完成回填：</li>
+<li><strong>§17.2 Phase 1</strong> 标记 ✅ 已完成；加入实测验收表（51/51 测试通过）</li>
+<li>加入实测关键指标（耗时 / 字段数 / 物理量准确性 / labeled_cases 校准结果）</li>
+<li>与 <code>extraction_reference.md</code> v0.3 同步：补 OpenFOAM quirk 11-14（VTK stderr 警告、boundary patch 数差异、endTime 类型、LTS pseudo-time 歧义）</li>
+<li>配套建立 <code>sim-knowledge/labeled_cases/combustion_extinction/DLR_A_cavity_normal/ground_truth.yaml</code> 作为 sim-knowledge 仓库的第一个种子</li>
+</ul>
+  </main>
+</div>
+</body>
+</html>

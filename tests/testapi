@@ -1,0 +1,9 @@
+from src.sim_parse import parse_case
+from pathlib import Path
+
+result = parse_case(
+    'D:/Git/SimGraph2/test_data/DLR_A_combustion/DLR_A_cavity',
+    target_tier=4,
+)
+print('mesh_cells:', result['tier_3_metadata']['mesh_cells'])
+print('T.max:', result['tier_4_field_stats']['variable_ranges']['T']['max'])

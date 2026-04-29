@@ -1,0 +1,544 @@
+{
+	"solver_type": "Openfome",
+	"mesh_data": [
+		{
+			"zome_name": "internalMesh",
+			"vertex_num": 7109,
+			"cell_num": 3466,
+			"cell_type": "vtkWedge",
+			"bounding_box": [
+				0.0,
+				0.18981915712356567,
+				-0.008287684060633183,
+				0.008287684060633183,
+				-0.019999999552965164,
+				1.0
+			]
+		},
+		{
+			"zome_name": "inletfuel",
+			"vertex_num": 9,
+			"cell_num": 4,
+			"cell_type": "vtkTriangle",
+			"bounding_box": [
+				0.0,
+				0.003996192943304777,
+				-0.00017447755089960992,
+				0.00017447755089960992,
+				-0.019999999552965164,
+				-0.019999999552965164
+			]
+		},
+		{
+			"zome_name": "inletair",
+			"vertex_num": 62,
+			"cell_num": 30,
+			"cell_type": "vtkQuad",
+			"bounding_box": [
+				0.004495717119425535,
+				0.1798286736011505,
+				-0.007851489819586277,
+				0.007851489819586277,
+				-0.019999999552965164,
+				-0.019999999552965164
+			]
+		},
+		{
+			"zome_name": "outlet",
+			"vertex_num": 75,
+			"cell_num": 37,
+			"cell_type": "vtkTriangle",
+			"bounding_box": [
+				0.0,
+				0.18981915712356567,
+				-0.008287684060633183,
+				0.008287684060633183,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"zome_name": "axis",
+			"vertex_num": 0,
+			"cell_num": 0,
+			"cell_type": "null",
+			"bounding_box": [
+				1e+299,
+				-1e+299,
+				1e+299,
+				-1e+299,
+				1e+299,
+				-1e+299
+			]
+		},
+		{
+			"zome_name": "leftside",
+			"vertex_num": 194,
+			"cell_num": 96,
+			"cell_type": "vtkQuad",
+			"bounding_box": [
+				0.1798286736011505,
+				0.18981915712356567,
+				-0.008287684060633183,
+				0.008287684060633183,
+				-0.019999999552965164,
+				1.0
+			]
+		},
+		{
+			"zome_name": "burnerwall",
+			"vertex_num": 20,
+			"cell_num": 8,
+			"cell_type": "vtkQuad",
+			"bounding_box": [
+				0.003996192943304777,
+				0.004495717119425535,
+				-0.00019628724840003997,
+				0.00019628724840003997,
+				-0.019999999552965164,
+				0.0
+			]
+		},
+		{
+			"zome_name": "burnertip",
+			"vertex_num": 4,
+			"cell_num": 1,
+			"cell_type": "vtkQuad",
+			"bounding_box": [
+				0.003996192943304777,
+				0.004495717119425535,
+				-0.00019628724840003997,
+				0.00019628724840003997,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"zome_name": "front",
+			"vertex_num": 3602,
+			"cell_num": 3466,
+			"cell_type": "vtkQuad",
+			"bounding_box": [
+				0.0,
+				0.18981915712356567,
+				0.0,
+				0.008287684060633183,
+				-0.019999999552965164,
+				1.0
+			]
+		},
+		{
+			"zome_name": "back",
+			"vertex_num": 3602,
+			"cell_num": 3466,
+			"cell_type": "vtkQuad",
+			"bounding_box": [
+				0.0,
+				0.18981915712356567,
+				-0.008287684060633183,
+				0.0,
+				-0.019999999552965164,
+				1.0
+			]
+		},
+		{
+			"zome_name": "overall",
+			"vertex_num": 14677,
+			"cell_num": 10574,
+			"bounding_box": [
+				0.0,
+				0.18981915712356567,
+				-0.008287684060633183,
+				0.008287684060633183,
+				-0.019999999552965164,
+				1.0
+			]
+		}
+	],
+	"fields": [
+		{
+			"field_name": "C",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 1.2032272422857204e-07
+			}
+		},
+		{
+			"field_name": "C2H",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 1.1756954165775824e-07
+			}
+		},
+		{
+			"field_name": "C2H2",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.005363096948713064
+			}
+		},
+		{
+			"field_name": "C2H3",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 2.3915806650620652e-06
+			}
+		},
+		{
+			"field_name": "C2H4",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.0019721630960702896
+			}
+		},
+		{
+			"field_name": "C2H5",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 5.081741164758569e-06
+			}
+		},
+		{
+			"field_name": "C2H6",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.0009612665162421763
+			}
+		},
+		{
+			"field_name": "C3H7",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 1.0503528713456944e-08
+			}
+		},
+		{
+			"field_name": "C3H8",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 1.8267815903527662e-05
+			}
+		},
+		{
+			"field_name": "CH",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 6.384846074070083e-08
+			}
+		},
+		{
+			"field_name": "CH2",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 1.803918280529615e-06
+			}
+		},
+		{
+			"field_name": "CH2(S)",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 7.986506744828148e-08
+			}
+		},
+		{
+			"field_name": "CH2CHO",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 5.714085773433908e-07
+			}
+		},
+		{
+			"field_name": "CH2CO",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.00029134523356333375
+			}
+		},
+		{
+			"field_name": "CH2O",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.00039038152317516506
+			}
+		},
+		{
+			"field_name": "CH2OH",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 2.8503632165666204e-07
+			}
+		},
+		{
+			"field_name": "CH3",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.0003341840929351747
+			}
+		},
+		{
+			"field_name": "CH3CHO",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 6.212869266164489e-06
+			}
+		},
+		{
+			"field_name": "CH3O",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 2.1827492673764937e-05
+			}
+		},
+		{
+			"field_name": "CH3OH",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.00032234477112069726
+			}
+		},
+		{
+			"field_name": "CH4",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.24564200639724731
+			}
+		},
+		{
+			"field_name": "CO",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.03426336497068405
+			}
+		},
+		{
+			"field_name": "CO2",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.08715589344501495
+			}
+		},
+		{
+			"field_name": "EDC<psiReactionThermo>:kappa",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 1.0
+			}
+		},
+		{
+			"field_name": "H",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 8.570652425987646e-05
+			}
+		},
+		{
+			"field_name": "H2",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.04649600014090538
+			}
+		},
+		{
+			"field_name": "H2O",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.14501193165779114
+			}
+		},
+		{
+			"field_name": "H2O2",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.00012940286251250654
+			}
+		},
+		{
+			"field_name": "HCCO",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 4.3555132833716925e-06
+			}
+		},
+		{
+			"field_name": "HCCOH",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 7.645155164937023e-06
+			}
+		},
+		{
+			"field_name": "HCO",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 6.59651959722396e-07
+			}
+		},
+		{
+			"field_name": "HO2",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.0001113700564019382
+			}
+		},
+		{
+			"field_name": "N2",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.7078610062599182,
+				"max": 0.7631490230560303
+			}
+		},
+		{
+			"field_name": "O",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.00043063858174718916
+			}
+		},
+		{
+			"field_name": "O2",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.23184418678283691
+			}
+		},
+		{
+			"field_name": "OH",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.0019510934362187982
+			}
+		},
+		{
+			"field_name": "Qdot",
+			"field_type": "Scalar",
+			"range": {
+				"min": -112337.875,
+				"max": 344424960.0
+			}
+		},
+		{
+			"field_name": "T",
+			"field_type": "Scalar",
+			"range": {
+				"min": 291.891845703125,
+				"max": 1996.4501953125
+			}
+		},
+		{
+			"field_name": "TabulationResults",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 2.0
+			}
+		},
+		{
+			"field_name": "alphat",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.008743062615394592
+			}
+		},
+		{
+			"field_name": "epsilon",
+			"field_type": "Scalar",
+			"range": {
+				"min": 1.226374206453329e-05,
+				"max": 174744.390625
+			}
+		},
+		{
+			"field_name": "k",
+			"field_type": "Scalar",
+			"range": {
+				"min": 5.141086512594484e-05,
+				"max": 50.01020812988281
+			}
+		},
+		{
+			"field_name": "nut",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 0.013023881241679192
+			}
+		},
+		{
+			"field_name": "p",
+			"field_type": "Scalar",
+			"range": {
+				"min": 101307.1640625,
+				"max": 101410.0625
+			}
+		},
+		{
+			"field_name": "rDeltaT",
+			"field_type": "Scalar",
+			"range": {
+				"min": 10000.0,
+				"max": 68814.0625
+			}
+		},
+		{
+			"field_name": "U_x",
+			"field_type": "Scalar",
+			"range": {
+				"min": -1.2736705541610718,
+				"max": 3.6443686485290527
+			}
+		},
+		{
+			"field_name": "U_y",
+			"field_type": "Scalar",
+			"range": {
+				"min": -4.608354531310255e-10,
+				"max": 2.6435717503936473e-10
+			}
+		},
+		{
+			"field_name": "U_z",
+			"field_type": "Scalar",
+			"range": {
+				"min": 0.0,
+				"max": 43.56459045410156
+			}
+		}
+	]
+}

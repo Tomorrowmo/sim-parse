@@ -1,0 +1,136 @@
+# Phase 1 first cut: ~14 QOIs covering combustion + numerics + general fluid.
+# Each rule extracts a canonical variable from Tier 3+4 outputs into a long-format record.
+#
+# Rule types:
+#   - pluck:  copy a value from a tier output (most common)
+#   - voting: multi-criterion boolean (used for extinction etc.)
+#
+# Migration target (Phase 2+): split into sim-knowledge/physics/<domain>/criteria.yaml.
+
+qois:
+
+  # ─── Mesh / structural counts ─────────────────────────────────────────────
+  - name: mesh_cells
+    description: "Number of mesh cells"
+    unit: "1"
+    type: pluck
+    source: {tier: 3, path: "mesh_cells"}
+
+  - name: mesh_points
+    description: "Number of mesh nodes"
+    unit: "1"
+    type: pluck
+    source: {tier: 3, path: "mesh_points"}
+
+  - name: n_time_steps
+    description: "Number of written time steps"
+    unit: "1"
+    type: pluck
+    source: {tier: 2, path: "n_time_steps"}
+
+  - name: latest_time
+    description: "Latest time step in case"
+    unit: "1"
+    type: pluck
+    source: {tier: 2, path: "latest_time"}
+
+  # ─── Run state ────────────────────────────────────────────────────────────
+  - name: is_completed
+    description: "Latest time reached configured endTime"
+    unit: "boolean"
+    type: pluck
+    source: {tier: 3, path: "is_completed"}
+
+  # ─── Field statistics (Tier 4) ────────────────────────────────────────────
+  - name: max_temperature
+    description: "Maximum temperature in domain"
+    unit: "K"
+    type: pluck
+    source: {tier: 4, path: "variable_ranges.T.max"}
+
+  - name: min_temperature
+    description: "Minimum temperature in domain"
+    unit: "K"
+    type: pluck
+    source: {tier: 4, path: "variable_ranges.T.min"}
+
+  - name: mean_temperature
+    description: "Mean temperature in domain"
+    unit: "K"
+    type: pluck
+    source: {tier: 4, path: "variable_ranges.T.mean"}
+
+  - name: max_velocity_magnitude
+    description: "Maximum velocity magnitude"
+    unit: "m/s"
+    type: pluck
+    source: {tier: 4, path: "variable_ranges.U.magnitude_max"}
+
+  - name: max_pressure
+    description: "Maximum pressure"
+    unit: "Pa"
+    type: pluck
+    source: {tier: 4, path: "variable_ranges.p.max"}
+
+  - name: max_heat_release_rate
+    description: "Peak volumetric heat release rate (combustion)"
+    unit: "W/m^3"
+    type: pluck
+    source: {tier: 4, path: "variable_ranges.Qdot.max"}
+
+  - name: max_OH_mass_fraction
+    description: "Peak OH radical mass fraction (combustion / flame indicator)"
+    unit: "1"
+    type: pluck
+    source: {tier: 4, path: "variable_ranges.OH.max"}
+
+  # ─── Voting-based booleans ────────────────────────────────────────────────
+  - name: is_extinguished
+    description: "Flame extinction judgment (combustion only)"
+    unit: "boolean"
+    type: voting
+    voting_threshold: 2
+    required_paths:
+      - "tier_3.combustion.combustionModel"
+    criteria:
+      - name: low_heat_release
+        path: "tier_4.variable_ranges.Qdot.max"
+        op: "<"
+        threshold: 1.0e6
+      - name: low_temperature_max
+        # NOTE: simplified — uses absolute T.max < 400K rather than (T.max - T_inlet) < 100K.
+        # Phase 2 will add expression-based criteria.
+        path: "tier_4.variable_ranges.T.max"
+        op: "<"
+        threshold: 400.0
+      - name: no_oh_radical
+        path: "tier_4.variable_ranges.OH.max"
+        op: "<"
+        threshold: 1.0e-6
+        skip_if_missing: true
+    reference: "Poinsot & Veynante 2005 *Theoretical and Numerical Combustion* Ch.5"
+    confidence_when_all_match: "HIGH"
+    confidence_when_majority_match: "MED"
+
+  - name: is_diverged
+    description: "Numerical divergence (residual explosion or unphysical values)"
+    unit: "boolean"
+    type: voting
+    voting_threshold: 1
+    criteria:
+      - name: residual_explosion
+        path: "tier_4.convergence_orders.U"
+        op: "<"
+        threshold: -2  # residual increased by > 2 orders
+        skip_if_missing: true
+      - name: temperature_unphysical
+        path: "tier_4.variable_ranges.T.max"
+        op: ">"
+        threshold: 1.0e8
+        skip_if_missing: true
+      - name: pressure_unphysical
+        path: "tier_4.variable_ranges.p.max"
+        op: ">"
+        threshold: 1.0e15
+        skip_if_missing: true
+    reference: "Roache 1998 V&V; OpenFOAM FATAL ERROR catalog"
