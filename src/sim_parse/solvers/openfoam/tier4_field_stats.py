@@ -52,6 +52,7 @@ def field_stats(
     time: float | None = None,
     fields: list[str] | None = None,
     inventory: dict | None = None,
+    iterate_times: bool = False,
 ) -> dict | None:
     case_root = Path(case_root)
     out = init_tier_output("A")
@@ -121,6 +122,17 @@ def field_stats(
         # closest available
         target_time = min(available_times, key=lambda t: abs(t - time))
     reader.SetTimeValue(target_time)
+
+    # Time-series mode: keep the same reader (re-uses geometry across times),
+    # iterate every available time, populate time_series_data, and return
+    # without doing the heavy 'representative-only' work below. This is
+    # MUCH cheaper than the CGNS branch because OpenFOAM stores field data
+    # in per-time subdirs sharing one polyMesh.
+    if iterate_times and len(available_times) >= 2:
+        return _iterate_openfoam_times(
+            out, reader, dsa, available_times,
+            fields=fields,
+        )
 
     # Enable all boundary patches so that mesh_zones geometry enrichment
     # (per-patch bounding box / point count / element type histogram) can
@@ -256,6 +268,71 @@ def _array_to_numpy(cell_data, name: str):
     """Extract a numpy array from a wrapped vtkDataObject's CellData."""
     arr = cell_data[name]
     return np.asarray(arr)
+
+
+def _iterate_openfoam_times(out: dict, reader, dsa,
+                             available_times: list[float],
+                             *, fields: list[str] | None) -> dict:
+    """For OpenFOAM cases with multiple time-step subdirs, re-use the same
+    reader (which keeps the mesh in memory) and SetTimeValue + Update for
+    each time. Cheap compared to opening N readers.
+    """
+    n_arrs = reader.GetNumberOfCellArrays()
+    available_vars = [reader.GetCellArrayName(i) for i in range(n_arrs)]
+    wanted = set(fields) if fields else set(available_vars)
+
+    # Disable everything, enable only what user asked for
+    for v in available_vars:
+        reader.SetCellArrayStatus(v, 1 if v in wanted else 0)
+
+    series: dict[str, list[dict]] = {}
+
+    for t in available_times:
+        reader.SetTimeValue(t)
+        reader.Update()
+        output = reader.GetOutput()
+        if output is None:
+            continue
+
+        # Find the internal mesh block (first block with cell data)
+        internal_block = None
+        for block in iterate_blocks(output):
+            cd = block.GetCellData()
+            if cd is not None and cd.GetNumberOfArrays() > 0:
+                internal_block = block
+                break
+        if internal_block is None:
+            continue
+
+        wrapped = dsa.WrapDataObject(internal_block)
+        for v in wanted:
+            if v not in available_vars:
+                continue
+            try:
+                arr = wrapped.CellData[v]
+            except KeyError:
+                continue
+            if arr is None:
+                continue
+            arr_np = np.asarray(arr)
+            if arr_np.size == 0:
+                continue
+            stats = _compute_stats(v, arr_np)
+            stats["time"] = t
+            stats["data_scope"] = "cell"
+            series.setdefault(v, []).append(stats)
+
+    if series:
+        set_field(out, "time_series_data", series,
+                  FieldProvenance("A",
+                      f"per-time stats over {len(available_times)} time steps "
+                      f"via vtkOpenFOAMReader.SetTimeValue loop"))
+        set_field(out, "time_series_times", list(available_times),
+                  FieldProvenance("A", "vtkOpenFOAMReader.GetTimeValues"))
+        set_field(out, "time_series_n_files", len(available_times),
+                  FieldProvenance("A", "len(available_times)"))
+
+    return out
 
 
 def _extract_mesh_zones_geometry(multi_block, dsa) -> dict[str, dict] | None:

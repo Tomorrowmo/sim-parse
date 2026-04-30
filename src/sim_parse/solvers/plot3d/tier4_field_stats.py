@@ -1,9 +1,4 @@
-"""Tecplot Tier 4 — Field statistics (when VTK reader compatible).
-
-If a Tecplot reader version-incompatible (e.g. TDV112), Tier 4 produces
-empty `variable_ranges` plus a clear warning — it does NOT silently
-return zeros. Tier 1+2 header parse still gave variable names.
-"""
+"""Plot3D Tier 4 — Field statistics."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -36,10 +31,13 @@ def field_stats(
     inventory: dict | None = None,
 ) -> dict | None:
     out = init_tier_output("A")
-
-    file_path = identity.get("file_path")
-    if not file_path:
-        add_warning(out, "no file_path in identity")
+    xyz_path = identity.get("xyz_path")
+    q_path = identity.get("q_path")
+    if not xyz_path:
+        add_warning(out, "no xyz_path in identity")
+        return out
+    if not q_path:
+        add_warning(out, "no .q solution file paired with .xyz; mesh-only Plot3D")
         return out
 
     try:
@@ -48,25 +46,32 @@ def field_stats(
         add_warning(out, f"VTK unavailable: {e}")
         return out
 
-    sub_format = identity.get("sub_format", "ascii")
-
-    # ASCII Tecplot: try Romtek first. Binary: skip Romtek too (crash risk).
-    output = None
-    if sub_format == "ascii":
-        from sim_parse.adapters.vtk_io import load_via_romtek
-        output = load_via_romtek([file_path], "TecplotReader")
+    # Try Romtek first
+    from sim_parse.adapters.vtk_io import load_via_romtek
+    output = load_via_romtek([xyz_path, q_path], "Plot3DReader")
 
     if output is None:
-        reader, reader_kind = _make_tecplot_reader(vtk, file_path, sub_format)
-        if reader is None:
-            add_warning(out,
-                f"VTK could not read this Tecplot file (sub_format={sub_format}). "
-                f"variable_ranges left empty. Tier 1+2 still have file metadata "
-                f"and variable name list from the header parse.")
+        # Fallback: standard vtkMultiBlockPLOT3DReader with derived quantities
+        try:
+            r = vtk.vtkMultiBlockPLOT3DReader()
+        except AttributeError:
+            add_warning(out, "VTK build missing vtkMultiBlockPLOT3DReader")
             return out
-        output = reader.GetOutput()
+
+        r.SetXYZFileName(str(xyz_path))
+        r.SetQFileName(str(q_path))
+        safe_call(r.SetBinaryFile, 1, default=None)
+        safe_call(r.SetMultiGrid, 1, default=None)
+        safe_call(r.SetByteOrderToLittleEndian, default=None)
+        safe_call(r.SetIBlanking, 0, default=None)
+        # Enable derived quantities (PRESSURE / TEMPERATURE / MACH / ...)
+        # via vtkMultiBlockPLOT3DReader's function-array API
+        for fn_id in [110, 111, 113, 120, 130, 140, 144, 153, 163, 170, 184]:
+            safe_call(r.AddFunction, fn_id, default=None)
+        safe_call(r.Update, default=None)
+        output = r.GetOutput()
         if output is None:
-            add_warning(out, f"vtk{reader_kind}TecplotReader returned no output")
+            add_warning(out, "Plot3D reader returned no output")
             return out
 
     variable_ranges: dict[str, dict] = {}
@@ -74,9 +79,9 @@ def field_stats(
     bbox_x_all, bbox_y_all, bbox_z_all = [], [], []
     available: set[str] = set()
 
-    def _process_block(block):
+    for _path, block in iterate_named_blocks(output):
         if block is None:
-            return
+            continue
         wrapped = dsa.WrapDataObject(block)
         for source_kind, attr in (("cell", block.GetCellData),
                                   ("point", block.GetPointData)):
@@ -101,7 +106,6 @@ def field_stats(
                 stats["data_scope"] = source_kind
                 variable_ranges[name] = stats
                 rank_by_name[name] = array_rank(arr_np)
-
         try:
             pts = np.asarray(wrapped.Points)
             if pts.size > 0:
@@ -111,16 +115,9 @@ def field_stats(
         except Exception:
             pass
 
-    blocks = list(iterate_named_blocks(output))
-    if not blocks:
-        _process_block(output)
-    else:
-        for _path, block in blocks:
-            _process_block(block)
-
     if variable_ranges:
         set_field(out, "variable_ranges", variable_ranges,
-                  FieldProvenance("A", f"vtk{reader_kind}TecplotReader cell+point arrays"))
+                  FieldProvenance("A", "vtkMultiBlockPLOT3DReader cell+point arrays + AddFunction derived"))
         nan_fields = detect_nonfinite_fields(variable_ranges)
         set_field(out, "has_nan_field", bool(nan_fields),
                   FieldProvenance("A", "non-finite stat scan"))
@@ -145,45 +142,14 @@ def field_stats(
             rank_by_name=rank_by_name,
         )
         set_field(out, "variables_kind_verified", verified,
-                  FieldProvenance("A", f"vtk{reader_kind}TecplotReader rank verification"))
+                  FieldProvenance("A", "vtkMultiBlockPLOT3DReader rank verification"))
 
     set_field(out, "available_variables_count", len(available),
-              FieldProvenance("A", "union over blocks' cell+point arrays"))
+              FieldProvenance("A", "Plot3D reader cell+point arrays"))
     set_field(out, "exported_variable_count", len(variable_ranges),
               FieldProvenance("A", "len(variable_ranges)"))
 
     return out
-
-
-def _make_tecplot_reader(vtk_module, file_path: str, sub_format: str):
-    """Mirror Tier 3 — only attempt ASCII reader.
-
-    Same rationale as tier3: vtkTecplotBinaryReader segfaults on multiple
-    versions and is unsafe to call from a long-running server.
-    """
-    if sub_format != "ascii":
-        return None, None
-    try_order = [("Ascii", "vtkTecplotReader")]
-    for kind_str, klass_name in try_order:
-        klass = getattr(vtk_module, klass_name, None)
-        if klass is None:
-            continue
-        try:
-            r = klass()
-            r.SetFileName(str(file_path))
-            r.Update()
-            out = r.GetOutput()
-            if out is None:
-                continue
-            if hasattr(out, "GetNumberOfBlocks"):
-                if out.GetNumberOfBlocks() > 0:
-                    return r, kind_str
-            else:
-                if out.GetNumberOfCells() > 0 or out.GetNumberOfPoints() > 0:
-                    return r, kind_str
-        except Exception:
-            continue
-    return None, None
 
 
 def _compute_stats(arr: np.ndarray) -> dict:

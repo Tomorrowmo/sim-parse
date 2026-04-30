@@ -51,7 +51,18 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
         add_warning(out, f"No VTK reader for fluent sub_format={sub_format}")
         return out
 
-    reader.SetFileName(cas_path)
+    # vtkFLUENTReader (9.4.x / 9.6.x) crashes on .cas.gz with STATUS_STACK_BUFFER_OVERRUN
+    # — transparently decompress to %TEMP% before SetFileName.
+    from sim_parse.solvers.fluent._decompress import ensure_decompressed_fluent_pair
+    cas_for_vtk, _dat_for_vtk = ensure_decompressed_fluent_pair(
+        cas_path, identity.get("dat_path")
+    )
+    if str(cas_for_vtk) != str(cas_path):
+        add_warning(out,
+            f"transparently decompressed .cas.gz to {cas_for_vtk} for vtkFLUENTReader "
+            f"(reader cannot read .gz directly)")
+
+    reader.SetFileName(str(cas_for_vtk))
     safe_call(reader.UpdateInformation, default=None)
 
     # Cell array names (variables in the dat file)

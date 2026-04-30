@@ -64,7 +64,19 @@ def field_stats(
         add_warning(out, f"No VTK reader for sub_format={sub_format}")
         return out
 
-    reader.SetFileName(cas_path)
+    # vtkFLUENTReader (9.4.x / 9.6.x) crashes on .cas.gz with STATUS_STACK_BUFFER_OVERRUN
+    # — transparently decompress to %TEMP% before SetFileName. The pair (cas, dat)
+    # share a basename in the cache dir so vtkFLUENTReader's auto-pairing finds them.
+    from sim_parse.solvers.fluent._decompress import ensure_decompressed_fluent_pair
+    cas_for_vtk, _dat_for_vtk = ensure_decompressed_fluent_pair(
+        cas_path, identity.get("dat_path")
+    )
+    if str(cas_for_vtk) != str(cas_path):
+        add_warning(out,
+            f"transparently decompressed .cas.gz to {cas_for_vtk} for vtkFLUENTReader "
+            f"(reader cannot read .gz directly)")
+
+    reader.SetFileName(str(cas_for_vtk))
 
     # vtkFLUENTReader quirk vs vtkOpenFOAMReader: UpdateInformation() does
     # NOT populate the cell-array enumeration. We must Update() first

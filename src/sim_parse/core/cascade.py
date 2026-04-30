@@ -42,6 +42,8 @@ def parse_case(
     qoi_rules_path: str | Path | None = None,
     auto_descend: bool = True,
     auto_descend_max_depth: int = 3,
+    iterate_times: bool = False,
+    fields: list[str] | None = None,
 ) -> dict:
     """Parse a case folder, return tiered structured output.
 
@@ -159,6 +161,8 @@ def parse_case(
             out.get("tier_3_metadata", {}),
             default_path,
             inventory=out.get("tier_2_inventory", {}),
+            iterate_times=iterate_times,
+            fields=fields,
         )
     if target_tier >= 5:
         out["tier_5_qoi"] = _run_tier5_qoi(
@@ -401,11 +405,13 @@ def _run_tier4_field_stats(
     default_path: str,
     *,
     inventory: dict | None = None,
+    iterate_times: bool = False,
+    fields: list[str] | None = None,
 ) -> dict:
     fmt = identity.get("format")
     bundle = get_solver(fmt) if fmt else None
     if bundle and "field_stats" in bundle and default_path == "A":
-        # Pass `inventory` only if the solver's field_stats accepts it,
+        # Pass optional kwargs only if the solver's field_stats supports them,
         # so externally-registered solvers with older signatures still work.
         kwargs: dict = {}
         try:
@@ -413,6 +419,10 @@ def _run_tier4_field_stats(
             sig = inspect.signature(bundle["field_stats"])
             if "inventory" in sig.parameters:
                 kwargs["inventory"] = inventory
+            if "iterate_times" in sig.parameters:
+                kwargs["iterate_times"] = iterate_times
+            if "fields" in sig.parameters and fields is not None:
+                kwargs["fields"] = fields
         except (TypeError, ValueError):
             pass
         result = safe_call(

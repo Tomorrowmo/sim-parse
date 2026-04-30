@@ -1,9 +1,4 @@
-"""Tecplot Tier 4 — Field statistics (when VTK reader compatible).
-
-If a Tecplot reader version-incompatible (e.g. TDV112), Tier 4 produces
-empty `variable_ranges` plus a clear warning — it does NOT silently
-return zeros. Tier 1+2 header parse still gave variable names.
-"""
+"""VTK XML Tier 4 — Field statistics."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -38,8 +33,9 @@ def field_stats(
     out = init_tier_output("A")
 
     file_path = identity.get("file_path")
-    if not file_path:
-        add_warning(out, "no file_path in identity")
+    reader_class = identity.get("reader_class")
+    if not (file_path and reader_class):
+        add_warning(out, "missing file_path/reader_class")
         return out
 
     try:
@@ -48,25 +44,25 @@ def field_stats(
         add_warning(out, f"VTK unavailable: {e}")
         return out
 
-    sub_format = identity.get("sub_format", "ascii")
-
-    # ASCII Tecplot: try Romtek first. Binary: skip Romtek too (crash risk).
+    # Try Romtek first; fall back to standard VTK XML reader.
+    from sim_parse.adapters.vtk_io import ROMTEK_READER_FOR, load_via_romtek
+    sub_format = identity.get("sub_format", "").lower()
+    romtek_name = ROMTEK_READER_FOR.get(sub_format)
     output = None
-    if sub_format == "ascii":
-        from sim_parse.adapters.vtk_io import load_via_romtek
-        output = load_via_romtek([file_path], "TecplotReader")
+    if romtek_name:
+        output = load_via_romtek([file_path], romtek_name)
 
     if output is None:
-        reader, reader_kind = _make_tecplot_reader(vtk, file_path, sub_format)
-        if reader is None:
-            add_warning(out,
-                f"VTK could not read this Tecplot file (sub_format={sub_format}). "
-                f"variable_ranges left empty. Tier 1+2 still have file metadata "
-                f"and variable name list from the header parse.")
+        klass = getattr(vtk, reader_class, None)
+        if klass is None:
+            add_warning(out, f"VTK build missing {reader_class}")
             return out
+        reader = klass()
+        reader.SetFileName(str(file_path))
+        safe_call(reader.Update, default=None)
         output = reader.GetOutput()
         if output is None:
-            add_warning(out, f"vtk{reader_kind}TecplotReader returned no output")
+            add_warning(out, f"{reader_class} returned no output")
             return out
 
     variable_ranges: dict[str, dict] = {}
@@ -74,7 +70,7 @@ def field_stats(
     bbox_x_all, bbox_y_all, bbox_z_all = [], [], []
     available: set[str] = set()
 
-    def _process_block(block):
+    def _process(block):
         if block is None:
             return
         wrapped = dsa.WrapDataObject(block)
@@ -101,7 +97,6 @@ def field_stats(
                 stats["data_scope"] = source_kind
                 variable_ranges[name] = stats
                 rank_by_name[name] = array_rank(arr_np)
-
         try:
             pts = np.asarray(wrapped.Points)
             if pts.size > 0:
@@ -111,16 +106,15 @@ def field_stats(
         except Exception:
             pass
 
-    blocks = list(iterate_named_blocks(output))
-    if not blocks:
-        _process_block(output)
+    if hasattr(output, "GetNumberOfBlocks"):
+        for _path, block in iterate_named_blocks(output):
+            _process(block)
     else:
-        for _path, block in blocks:
-            _process_block(block)
+        _process(output)
 
     if variable_ranges:
         set_field(out, "variable_ranges", variable_ranges,
-                  FieldProvenance("A", f"vtk{reader_kind}TecplotReader cell+point arrays"))
+                  FieldProvenance("A", f"{reader_class} cell+point arrays"))
         nan_fields = detect_nonfinite_fields(variable_ranges)
         set_field(out, "has_nan_field", bool(nan_fields),
                   FieldProvenance("A", "non-finite stat scan"))
@@ -145,45 +139,14 @@ def field_stats(
             rank_by_name=rank_by_name,
         )
         set_field(out, "variables_kind_verified", verified,
-                  FieldProvenance("A", f"vtk{reader_kind}TecplotReader rank verification"))
+                  FieldProvenance("A", f"{reader_class} rank verification"))
 
     set_field(out, "available_variables_count", len(available),
-              FieldProvenance("A", "union over blocks' cell+point arrays"))
+              FieldProvenance("A", "VTK XML reader cell+point arrays"))
     set_field(out, "exported_variable_count", len(variable_ranges),
               FieldProvenance("A", "len(variable_ranges)"))
 
     return out
-
-
-def _make_tecplot_reader(vtk_module, file_path: str, sub_format: str):
-    """Mirror Tier 3 — only attempt ASCII reader.
-
-    Same rationale as tier3: vtkTecplotBinaryReader segfaults on multiple
-    versions and is unsafe to call from a long-running server.
-    """
-    if sub_format != "ascii":
-        return None, None
-    try_order = [("Ascii", "vtkTecplotReader")]
-    for kind_str, klass_name in try_order:
-        klass = getattr(vtk_module, klass_name, None)
-        if klass is None:
-            continue
-        try:
-            r = klass()
-            r.SetFileName(str(file_path))
-            r.Update()
-            out = r.GetOutput()
-            if out is None:
-                continue
-            if hasattr(out, "GetNumberOfBlocks"):
-                if out.GetNumberOfBlocks() > 0:
-                    return r, kind_str
-            else:
-                if out.GetNumberOfCells() > 0 or out.GetNumberOfPoints() > 0:
-                    return r, kind_str
-        except Exception:
-            continue
-    return None, None
 
 
 def _compute_stats(arr: np.ndarray) -> dict:

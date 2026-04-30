@@ -43,22 +43,32 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
         add_warning(out, f"VTK unavailable, no mesh metadata: {e}")
         return out
 
-    reader, reader_kind = _make_tecplot_reader(vtk, file_path,
-                                               identity.get("sub_format", "ascii"))
-    if reader is None:
-        add_warning(out,
-            f"VTK could not read this Tecplot file (sub_format="
-            f"{identity.get('sub_format')}). Tier 1+2 header info is still "
-            f"available; Tier 3+4 mesh statistics require VTK reader support.")
-        return out
+    # For ASCII Tecplot, try Romtek first (its TecplotReader is reliable on ASCII).
+    # For binary, skip Romtek too — known crash risk parallels standard VTK.
+    sub_format = identity.get("sub_format", "ascii")
+    output = None
+    reader_kind = None
+    if sub_format == "ascii":
+        from sim_parse.adapters.vtk_io import load_via_romtek
+        output = load_via_romtek([file_path], "TecplotReader")
+        if output is not None:
+            reader_kind = "Romtek"
 
-    output = safe_call(reader.GetOutput, default=None)
     if output is None:
-        add_warning(out, f"vtk{reader_kind}TecplotReader returned no output")
-        return out
+        reader, reader_kind = _make_tecplot_reader(vtk, file_path, sub_format)
+        if reader is None:
+            add_warning(out,
+                f"VTK could not read this Tecplot file (sub_format="
+                f"{identity.get('sub_format')}). Tier 1+2 header info is still "
+                f"available; Tier 3+4 mesh statistics require VTK reader support.")
+            return out
+        output = safe_call(reader.GetOutput, default=None)
+        if output is None:
+            add_warning(out, f"vtk{reader_kind}TecplotReader returned no output")
+            return out
 
     set_field(out, "tecplot_reader_used", reader_kind,
-              FieldProvenance("A", "which VTK reader actually parsed it"))
+              FieldProvenance("A", "which reader actually parsed it"))
 
     n_volume_cells = 0
     n_blocks_total_points = 0
@@ -139,7 +149,7 @@ def _make_tecplot_reader(vtk_module, file_path: str, sub_format: str):
     return None, None
 
 
-_VTK_3D_CELL_TYPES = {10, 12, 13, 14, 42}
+_VTK_3D_CELL_TYPES = {10, 11, 12, 13, 14, 42}  # Tetra, Voxel, Hex, Wedge, Pyramid, Polyhedron
 _VTK_2D_CELL_TYPES = {5, 7, 9}
 
 

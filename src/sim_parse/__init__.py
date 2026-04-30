@@ -50,3 +50,6 @@ from sim_parse.solvers import openfoam as _openfoam_module  # noqa: F401, E402
 from sim_parse.solvers import fluent as _fluent_module  # noqa: F401, E402
 from sim_parse.solvers import ensight as _ensight_module  # noqa: F401, E402
 from sim_parse.solvers import tecplot as _tecplot_module  # noqa: F401, E402
+from sim_parse.solvers import cgns as _cgns_module  # noqa: F401, E402
+from sim_parse.solvers import vtk_xml as _vtk_xml_module  # noqa: F401, E402
+from sim_parse.solvers import plot3d as _plot3d_module  # noqa: F401, E402

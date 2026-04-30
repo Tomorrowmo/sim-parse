@@ -22,12 +22,35 @@ def identify(case_root: Path) -> dict | None:
             list(case_root.glob("*.plt")) + list(case_root.glob("*.dat"))
         )
         candidates = [c for c in candidates if c.is_file()]
-        # Filter to ones that look like Tecplot
+        # Filter to ones that look like Tecplot (binary TDV magic or ASCII keywords)
         confirmed = [c for c in candidates if _is_tecplot(c)]
+        if not confirmed:
+            return None
         if len(confirmed) == 1:
             return _build_identity(confirmed[0], case_root_kind="directory",
                                    case_dir=case_root)
-        return None
+        # Multiple Tecplot files — treat as time/iter sequence
+        from sim_parse.core.sequence import detect_file_sequence
+        seq = detect_file_sequence(confirmed)
+        if seq is None:
+            return None
+        identity = _build_identity(seq["representative"],
+                                   case_root_kind="directory_sequence",
+                                   case_dir=case_root)
+        if identity is None:
+            return None
+        identity["sequence_files"] = [str(f) for f in seq["all_files"]]
+        identity["n_sequence_files"] = seq["n_files"]
+        identity["sequence_pattern"] = seq["pattern_description"]
+        if seq["time_values"] is not None:
+            identity["sequence_time_values"] = seq["time_values"]
+        identity["_warnings"] = identity.get("_warnings", []) + [
+            f"directory contains {seq['n_files']} Tecplot files; using "
+            f"{seq['representative'].name} as representative (last in "
+            f"{seq['pattern_description']} order). All files listed in "
+            f"`sequence_files`."
+        ]
+        return identity
 
     if case_root.is_file():
         # Don't gate on extension. Tecplot binary content is sometimes

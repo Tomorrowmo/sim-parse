@@ -41,16 +41,20 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
         add_warning(out, f"VTK unavailable, no mesh metadata: {e}")
         return out
 
-    reader = safe_call(_make_ensight_reader, vtk, case_path, default=None)
-    if reader is None:
-        add_warning(out, "could not instantiate vtkEnSightGoldReader / BinaryReader")
-        return out
+    # Try Romtek first; fall back to standard vtkEnSightGoldReader / Binary.
+    from sim_parse.adapters.vtk_io import load_via_romtek
+    output = load_via_romtek([case_path], "EnsightReader")
 
-    safe_call(reader.Update, default=None)
-    output = safe_call(reader.GetOutput, default=None)
     if output is None:
-        add_warning(out, "EnSight reader returned no output")
-        return out
+        reader = safe_call(_make_ensight_reader, vtk, case_path, default=None)
+        if reader is None:
+            add_warning(out, "could not instantiate vtkEnSightGoldReader / BinaryReader")
+            return out
+        safe_call(reader.Update, default=None)
+        output = safe_call(reader.GetOutput, default=None)
+        if output is None:
+            add_warning(out, "EnSight reader returned no output")
+            return out
 
     # Walk blocks: each block is a "part" (zone in EnSight terminology).
     # Volume vs boundary classified by 3D vs 2D cell types.
@@ -116,7 +120,7 @@ def _make_ensight_reader(vtk_module, case_path: str):
 
 
 # Same VTK type-id sets used in OpenFOAM / Fluent — kept in sync deliberately.
-_VTK_3D_CELL_TYPES = {10, 12, 13, 14, 42}
+_VTK_3D_CELL_TYPES = {10, 11, 12, 13, 14, 42}  # Tetra, Voxel, Hex, Wedge, Pyramid, Polyhedron
 _VTK_2D_CELL_TYPES = {5, 7, 9}
 
 

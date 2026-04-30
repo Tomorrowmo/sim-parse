@@ -51,16 +51,20 @@ def field_stats(
         add_warning(out, f"VTK unavailable: {e}")
         return out
 
-    reader = safe_call(_make_ensight_reader, vtk, case_path, default=None)
-    if reader is None:
-        add_warning(out, "could not instantiate vtkEnSightGoldReader")
-        return out
+    # Try Romtek first; fall back to standard EnSight reader.
+    from sim_parse.adapters.vtk_io import load_via_romtek
+    output = load_via_romtek([case_path], "EnsightReader")
 
-    safe_call(reader.Update, default=None)
-    output = reader.GetOutput()
     if output is None:
-        add_warning(out, "EnSight reader returned no output")
-        return out
+        reader = safe_call(_make_ensight_reader, vtk, case_path, default=None)
+        if reader is None:
+            add_warning(out, "could not instantiate vtkEnSightGoldReader")
+            return out
+        safe_call(reader.Update, default=None)
+        output = reader.GetOutput()
+        if output is None:
+            add_warning(out, "EnSight reader returned no output")
+            return out
 
     variable_ranges: dict[str, dict] = {}
     rank_by_name: dict[str, str] = {}

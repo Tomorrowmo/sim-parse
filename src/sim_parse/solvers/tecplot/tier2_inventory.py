@@ -28,6 +28,21 @@ def inventory(case_root: Path, identity: dict) -> dict | None:
 
     sub_format = identity.get("sub_format", "ascii")
 
+    # If Tier 1 saw a multi-file Tecplot sequence, surface it
+    if identity.get("sequence_files"):
+        set_field(out, "sequence_files", identity["sequence_files"],
+                  FieldProvenance("A", "from Tier 1 sequence detection"))
+        set_field(out, "n_sequence_files", identity.get("n_sequence_files"),
+                  FieldProvenance("A", "from Tier 1"))
+        if identity.get("sequence_time_values") is not None:
+            tv = identity["sequence_time_values"]
+            set_field(out, "time_steps", tv,
+                      FieldProvenance("A", "parsed from filename numeric tokens"))
+            set_field(out, "n_time_steps", len(tv),
+                      FieldProvenance("A", "len(time_steps)"))
+            set_field(out, "latest_time", max(tv),
+                      FieldProvenance("A", "max(time_steps)"))
+
     if sub_format.startswith("binary"):
         try:
             header = parse_binary_header(file_path)
