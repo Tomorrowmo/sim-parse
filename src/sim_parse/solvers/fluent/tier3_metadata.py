@@ -165,6 +165,25 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
             set_field(out, "transcript_summary", trn_info,
                       FieldProvenance("A", "*.trn header parsing"))
 
+    # ─── physics_setup container — all NotExtracted for legacy .cas ──────────
+    # Fluent's physics setup (turbulence/material/reactions/...) lives in the
+    # `models` section of the .cas binary. vtkFLUENTReader doesn't expose
+    # this; we'd need an h5py path for .cas.h5 (CFF) or a dedicated section
+    # parser for legacy. Mark every component NotExtracted with the reason
+    # so consumers know it's parser debt, not a missing case feature.
+    from sim_parse.core.schema import physics_setup_unextractable
+    sub_format = identity.get("sub_format", "legacy")
+    if sub_format == "cff":
+        ne_reason = "Fluent CFF (.cas.h5) physics models in HDF5 attrs not yet read"
+        ne_would = "h5py reader for .cas.h5 models/* groups"
+    else:
+        ne_reason = "Fluent legacy .cas binary section 39 (models) not parsed"
+        ne_would = "binary .cas section parser (Section 39 / 41 / 45)"
+    set_field(out, "physics_setup",
+              physics_setup_unextractable(ne_reason, ne_would).model_dump(),
+              FieldProvenance("A",
+                  "all components NotExtracted; Fluent-specific reason carried inside"))
+
     return out
 
 

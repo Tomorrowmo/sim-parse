@@ -84,6 +84,19 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
             set_field(out, "mesh_points", n_blocks_total_points,
                       FieldProvenance("A", "max n_points over zones"))
 
+    # ─── physics_setup container — CGNS doesn't carry solver setup ───────────
+    # CGNS is a data-exchange format; the originating solver's physics
+    # setup (turbulence model, materials, reactions) is not stored in
+    # standard CGNS nodes. Mark every component NotExtracted; downstream
+    # consumers know to look elsewhere for those settings.
+    from sim_parse.core.schema import physics_setup_unextractable
+    set_field(out, "physics_setup",
+              physics_setup_unextractable(
+                  reason="CGNS files do not carry solver physics setup",
+                  would_require="originating solver's case file",
+              ).model_dump(),
+              FieldProvenance("A", "CGNS-format limitation"))
+
     return out
 
 

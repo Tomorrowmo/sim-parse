@@ -160,6 +160,18 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
                       f"system/fvSchemes::ddtSchemes.default = {ddt_default!r} "
                       f"(steadyState→False, anything else→True)"))
 
+    # ─── physics_setup container (cross-solver migration target) ─────────────
+    # Double-write pattern: keep the legacy top-level turbulence/thermophysics/
+    # chemistry/combustion fields above AND mirror them into a structured
+    # container alongside. Downstream consumers can switch to physics_setup
+    # at their own pace; sim-knowledge YAML rules will migrate in a follow-up.
+    physics_setup = _build_physics_setup(out)
+    set_field(out, "physics_setup", physics_setup,
+              FieldProvenance("A",
+                  "container of {turbulence, thermophysics, chemistry, "
+                  "combustion, radiation, multiphase}; each is either an "
+                  "extracted dict or a NotExtracted/NotApplicable sentinel"))
+
     # ─── is_completed (vs endTime) ───────────────────────────────────────────
     if "time_control" in out and "latest_time" in inventory:
         end_time = out["time_control"].get("endTime")
@@ -175,6 +187,67 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
+
+def _build_physics_setup(tier3_out: dict) -> dict:
+    """Build the cross-solver physics_setup container from already-extracted
+    OpenFOAM Tier 3 fields.
+
+    Sentinel choice per component:
+      - if the legacy field exists in `out` → use it verbatim (extracted)
+      - chemistry/combustion absent → NotApplicable (cold-flow case is the
+        legitimate reason; a reacting case that lost extraction would be
+        rare and rerunning would surface as a parser bug, not a missing
+        field)
+      - turbulence/thermophysics absent → NotExtracted (these should be
+        present on every modern OF case; absence means our extractor
+        couldn't read the file)
+      - radiation/multiphase → NotApplicable for now (we don't extract
+        these yet; flagged here for future fill-in)
+
+    Returns a plain dict (not the pydantic model) so it serializes to JSON
+    cleanly via the existing parse_case → MCP path.
+    """
+    from sim_parse.core.schema import NotApplicable, NotExtracted
+
+    def _slot(key: str, *, na_reason: str = "", ne_reason: str = "",
+              would_require: str = "") -> dict:
+        existing = tier3_out.get(key)
+        if existing:
+            return existing
+        if na_reason:
+            return NotApplicable(reason=na_reason).model_dump()
+        return NotExtracted(reason=ne_reason,
+                            would_require=would_require or None).model_dump()
+
+    return {
+        "turbulence": _slot(
+            "turbulence",
+            ne_reason="constant/turbulenceProperties not parsed",
+            would_require="re-read constant/turbulenceProperties",
+        ),
+        "thermophysics": _slot(
+            "thermophysics",
+            ne_reason="constant/thermophysicalProperties not parsed",
+            would_require="re-read constant/thermophysicalProperties",
+        ),
+        "chemistry": _slot(
+            "chemistry",
+            na_reason=("non-reacting case detected — no chemistryProperties "
+                       "file present and chemistry block not extracted"),
+        ),
+        "combustion": _slot(
+            "combustion",
+            na_reason=("non-reacting case detected — no combustionProperties "
+                       "file present and combustion block not extracted"),
+        ),
+        "radiation": NotApplicable(
+            reason="radiation extraction not yet implemented for OpenFOAM"
+        ).model_dump(),
+        "multiphase": NotApplicable(
+            reason="multiphase extraction not yet implemented for OpenFOAM"
+        ).model_dump(),
+    }
 
 
 @never_raise(default=None)

@@ -77,7 +77,68 @@ class Tier3Metadata(BaseModel):
     mesh_faces: int | None = None
 
 
+# ─── Physics setup container (OF migration target; all solvers ladder up) ─────
+
+
+# Each component is one of:
+#   dict                — extracted, real content
+#   NotApplicable model — physics not part of this case (cold-flow has no chem)
+#   NotExtracted model  — case has it but parser can't read it (parser debt)
+#   NotSet model        — case author left default / didn't configure
+#   None                — legacy / unspecified (treat as "we don't know yet")
+PhysicsField = dict | NotApplicable | NotExtracted | NotSet | None
+
+
+class PhysicsSetup(BaseModel):
+    """Cross-solver physics-setup container.
+
+    OpenFOAM populates components from the corresponding constant/* dicts:
+      turbulence       constant/turbulenceProperties
+      thermophysics    constant/thermophysicalProperties
+      chemistry        constant/chemistryProperties
+      combustion       constant/combustionProperties
+      radiation        constant/radiationProperties (if present)
+      multiphase       constant/transportProperties / phaseProperties
+
+    Fluent (legacy .cas binary) emits NotExtracted for everything except
+    when h5py can read .cas.h5; CGNS emits NotExtracted (data exchange
+    format doesn't carry solver setup).
+
+    Container is intentionally additive — adding a new component is
+    forward-compatible for downstream consumers because they default to
+    `None` (interpreted as "don't know").
+    """
+    model_config = ConfigDict(extra="allow")
+
+    turbulence:    PhysicsField = None
+    thermophysics: PhysicsField = None
+    chemistry:     PhysicsField = None
+    combustion:    PhysicsField = None
+    radiation:     PhysicsField = None
+    multiphase:    PhysicsField = None
+
+
+def physics_setup_unextractable(reason: str, would_require: str | None = None
+                                 ) -> PhysicsSetup:
+    """Build a PhysicsSetup where every component is NotExtracted.
+
+    For solvers (Fluent legacy, CGNS, ...) where Tier 3 currently can't
+    pull physics setup. Same `reason` for all components — caller passes
+    in the parser-debt explanation once.
+    """
+    not_ext = NotExtracted(reason=reason, would_require=would_require)
+    return PhysicsSetup(
+        turbulence=not_ext,
+        thermophysics=not_ext,
+        chemistry=not_ext,
+        combustion=not_ext,
+        radiation=not_ext,
+        multiphase=not_ext,
+    )
+
+
 __all__ = [
     "NotApplicable", "NotExtracted", "NotSet",
     "Tier1Identify", "MeshZone", "Tier3Metadata",
+    "PhysicsSetup", "PhysicsField", "physics_setup_unextractable",
 ]
