@@ -12,6 +12,7 @@ from sim_parse.core.diagnostics import verify_variable_kinds
 from sim_parse.solvers.fluent.tier4_field_stats import (
     _convergence_orders,
     _parse_fluent_trn_residuals,
+    _parse_monitor_types_from_cas,
 )
 
 
@@ -143,3 +144,72 @@ def test_fluent_verified_kinds_unknown_rank_not_phantom():
     )
     assert out["MACH"]["data_shape"] == "cell_unknown"
     assert out["MACH"]["phantom"] is False
+
+
+# ─── Monitor TYPE extraction from .cas (PostDrive Skill absorption) ───────────
+
+
+def _write_synth_cas_with_monitors(tmp_path, monitors: list[tuple[str, str]]):
+    """Build a fake legacy .cas with a monitor/report-definitions block.
+
+    Real Fluent .cas files mix ASCII text segments with binary section
+    payloads. We write something that's mostly ASCII (sufficient to
+    exercise the bytes-regex parser) plus a handful of fake binary
+    bytes to confirm the parser doesn't choke on them.
+    """
+    p = tmp_path / "case.cas"
+    parts = [b"(0 \"Fake Fluent .cas\")\n"]
+    parts.append(b"\x00\x01\x02\x03 some binary noise \xff\xfe\xfd\n")
+    parts.append(b"(monitor/report-definitions ")
+    for name, mtype in monitors:
+        parts.append(f' name "{name}" type "{mtype}"'.encode("ascii"))
+    parts.append(b")\n")
+    parts.append(b"\x00\x01trailing binary section\n")
+    p.write_bytes(b"".join(parts))
+    return p
+
+
+def test_parse_monitor_types_extracts_pairs(tmp_path):
+    cas = _write_synth_cas_with_monitors(tmp_path, [
+        ("cd-force", "force-monitor"),
+        ("cl-force", "force-monitor"),
+        ("mass-flow-outlet", "surface-monitor"),
+    ])
+    out = _parse_monitor_types_from_cas(cas)
+    assert out == {
+        "cd-force": "force-monitor",
+        "cl-force": "force-monitor",
+        "mass-flow-outlet": "surface-monitor",
+    }
+
+
+def test_parse_monitor_types_returns_none_when_no_block(tmp_path):
+    """A .cas without any monitor/report-definitions marker returns None
+    (not an empty dict — distinguishes 'no monitors' from 'parse failed')."""
+    p = tmp_path / "case.cas"
+    p.write_bytes(b"(0 \"no monitors here\")\n\x00\x01plenty of binary\n")
+    assert _parse_monitor_types_from_cas(p) is None
+
+
+def test_parse_monitor_types_returns_none_for_missing_file(tmp_path):
+    assert _parse_monitor_types_from_cas(tmp_path / "missing.cas") is None
+
+
+def test_parse_monitor_types_skips_cff(tmp_path):
+    """CFF (.cas.h5) needs an h5py reader, not bytes regex — return None."""
+    p = tmp_path / "case.cas.h5"
+    p.write_bytes(b"\x89HDF\r\n\x1a\n" + b"\x00" * 100)
+    assert _parse_monitor_types_from_cas(p) is None
+
+
+def test_parse_monitor_types_first_seen_wins_on_duplicates(tmp_path):
+    """If the same monitor name appears twice, keep the first type
+    (Fluent shouldn't emit duplicates, but be defensive)."""
+    cas = _write_synth_cas_with_monitors(tmp_path, [
+        ("cd-force", "force-monitor"),
+        ("cd-force", "drag-coefficient"),  # spurious second entry
+    ])
+    out = _parse_monitor_types_from_cas(cas)
+    assert out == {"cd-force": "force-monitor"}
+
+

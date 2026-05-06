@@ -185,8 +185,25 @@ def field_stats(
     # Force/coefficient time series from rfile.out
     reports = _read_fluent_report_files(case_dir)
     if reports:
+        # Pull monitor TYPE (force-monitor / surface-monitor / ...) from the
+        # .cas file's `monitor/report-definitions` blocks and stamp each
+        # report with it. The .cas is mostly binary but the report-defn
+        # block is text-encoded in legacy .cas (V18- and journal-replayed
+        # cases); silently skipped on CFF / cases without monitors.
+        monitor_types = _parse_monitor_types_from_cas(Path(cas_path))
+        if monitor_types:
+            for fname, summary in reports.items():
+                # Match by stem (strip "-rfile.out" / ".out") since rfile
+                # filenames mirror monitor names.
+                stem = fname.lower().replace("-rfile.out", "").replace(".out", "")
+                stem = stem.replace("report-", "")
+                if stem in monitor_types:
+                    summary["monitor_type"] = monitor_types[stem]
+
         set_field(out, "report_series", reports,
-                  FieldProvenance("A", "*-rfile.out / report-*.out CSV-like time series"))
+                  FieldProvenance("A",
+                      "*-rfile.out / report-*.out CSV-like time series; "
+                      "monitor_type added from .cas report-definitions when available"))
         normalized = _normalize_report_names(reports)
         if normalized:
             set_field(out, "report_qoi", normalized,
@@ -293,6 +310,62 @@ _REPORT_NAME_CANONICAL = [
     (re.compile(r"^mass[._-]?flow"),             "mass_flow_rate"),
     (re.compile(r"^heat[._-]?flux"),             "heat_flux_total"),
 ]
+
+
+# Match  name "X" type "Y"  (Fluent monitor/report-definitions schema).
+# Used on both legacy .cas (text-readable monitor block) and gz-decompressed
+# .cas. CFF (HDF5) cases store this in attrs and need a different reader.
+_MONITOR_NAME_TYPE_RE = re.compile(
+    rb'name\s+"([^"]+)"\s+type\s+"([^"]+)"',
+    re.IGNORECASE,
+)
+
+
+@never_raise(default=None)
+def _parse_monitor_types_from_cas(cas_path: Path) -> dict[str, str] | None:
+    """Scan a Fluent .cas (legacy, text or text-mixed binary) for the
+    `monitor/report-definitions` block and return {monitor_name: type}.
+
+    Why: rfile.out files give us VALUES; .cas tells us what KIND of
+    monitor produced each value (force-monitor / surface-monitor /
+    moment-monitor / mass-flow-rate / ...). Pairing the two means
+    LLM/downstream consumers know whether `cd-force.last_value=0.31`
+    is a coefficient or a raw force without inferring from the name.
+
+    Returns None on:
+      - HDF5 (.cas.h5) — wrong format here; CFF needs h5py path
+      - file not present / unreadable
+      - no monitor/report-definitions block in the .cas
+
+    Read in BINARY mode and use bytes regex: legacy .cas mixes ASCII
+    text segments with binary cell/face section payloads. Decoding the
+    whole file as utf-8 with errors='ignore' would drop too much.
+    Raw bytes regex is robust to interleaved binary garbage.
+    """
+    if not cas_path.is_file():
+        return None
+    if cas_path.name.lower().endswith(".cas.h5"):
+        return None  # CFF — different storage layout
+
+    try:
+        with open(cas_path, "rb") as f:
+            data = f.read()
+    except OSError:
+        return None
+
+    # Fast path: bail if the marker isn't present at all
+    if b"monitor/report-definitions" not in data:
+        return None
+
+    out: dict[str, str] = {}
+    # On the same line(s) following the marker we expect interleaved
+    # name / type pairs. We scan globally and pair up first-seen.
+    for m in _MONITOR_NAME_TYPE_RE.finditer(data):
+        name = m.group(1).decode("ascii", errors="ignore").strip().lower()
+        mtype = m.group(2).decode("ascii", errors="ignore").strip().lower()
+        if name and mtype and name not in out:
+            out[name] = mtype
+    return out or None
 
 
 def _normalize_report_names(reports: dict) -> dict:
