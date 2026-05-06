@@ -151,6 +151,15 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
         set_field(out, "bc", bc,
                   FieldProvenance("A", "0/<var> boundaryField fixedValue patches"))
 
+    # ─── is_transient (from system/fvSchemes::ddtSchemes.default) ───────────
+    transient_info = _detect_transient(case_root)
+    if transient_info is not None:
+        is_transient, ddt_default = transient_info
+        set_field(out, "is_transient", is_transient,
+                  FieldProvenance("A",
+                      f"system/fvSchemes::ddtSchemes.default = {ddt_default!r} "
+                      f"(steadyState→False, anything else→True)"))
+
     # ─── is_completed (vs endTime) ───────────────────────────────────────────
     if "time_control" in out and "latest_time" in inventory:
         end_time = out["time_control"].get("endTime")
@@ -166,6 +175,30 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
+
+@never_raise(default=None)
+def _detect_transient(case_root: Path) -> tuple[bool, str] | None:
+    """Read system/fvSchemes::ddtSchemes.default to classify steady vs transient.
+
+    Returns (is_transient, ddt_default_value) or None if fvSchemes is missing
+    or the ddtSchemes block is unparseable. `steadyState` → False, anything
+    else (Euler, CrankNicolson, backward, etc.) → True.
+
+    OpenFOAM convention: `ddtSchemes { default steadyState; ... }` for steady
+    solvers; transient solvers pick a real time-derivative discretization.
+    """
+    fv = case_root / "system" / "fvSchemes"
+    if not fv.is_file():
+        return None
+    text = fv.read_text(encoding="utf-8", errors="replace")
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    text = re.sub(r"//[^\n]*", "", text)
+    m = re.search(r"ddtSchemes\s*\{[^}]*\bdefault\s+(\w[\w\d_-]*)", text, re.DOTALL)
+    if not m:
+        return None
+    ddt = m.group(1)
+    return (ddt.lower() != "steadystate", ddt)
 
 
 def _build_mesh_zones_skeleton(tier3_out: dict, patches: list[dict] | None) -> list[dict]:
@@ -184,20 +217,23 @@ def _build_mesh_zones_skeleton(tier3_out: dict, patches: list[dict] | None) -> l
     """
     zones: list[dict] = []
 
+    # Always emit the internalMesh volume zone so the schema is satisfied
+    # even when mesh counts are unknown at Tier 3 (case has owner.gz with
+    # no `note` field). Tier 4 fills geometry via VTK; downstream consumers
+    # treat None fields as "TBD" rather than "absent".
     n_cells = tier3_out.get("mesh_cells")
-    n_points_total = tier3_out.get("mesh_points")
-    if n_cells is not None or n_points_total is not None:
-        zones.append({
-            "name": "internalMesh",
-            "role": "volume",
-            "n_cells": n_cells,
-            "n_faces": None,
-            "n_points": None,             # Tier 4 may fill (per-zone, not total)
-            "bounding_box": None,         # Tier 4 may fill
-            "element_types": None,        # Tier 4 may fill
-            "patch_type": None,
-            "_source": "constant/polyMesh/owner header note",
-        })
+    n_faces = tier3_out.get("mesh_faces")
+    zones.append({
+        "name": "internalMesh",
+        "role": "volume",
+        "n_cells": n_cells,
+        "n_faces": n_faces,
+        "n_points": None,             # Tier 4 may fill (per-zone, not total)
+        "bounding_box": None,         # Tier 4 may fill
+        "element_types": None,        # Tier 4 may fill
+        "patch_type": None,
+        "_source": "constant/polyMesh/owner header note",
+    })
 
     if patches:
         for p in patches:

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from sim_parse.solvers.fluent.tier3_metadata import (
     _classify_fluent_zone_by_name,
+    _project_boundaries_from_mesh_zones,
 )
 from sim_parse.solvers.openfoam.tier3_metadata import (
     _build_mesh_zones_skeleton,
@@ -59,9 +60,20 @@ def test_openfoam_skeleton_handles_no_patches():
 
 
 def test_openfoam_skeleton_handles_no_owner_data():
-    """If Tier 3 couldn't read polyMesh/owner, no volume zone is fabricated."""
+    """When polyMesh/owner has no `note` field (older tutorial cases), we
+    still emit the internalMesh volume zone with None mesh counts so the
+    cross-solver schema invariant holds. Tier 4 can fill geometry via VTK.
+    """
     out = _build_mesh_zones_skeleton({}, patches=None)
-    assert out == []
+    assert len(out) == 1
+    z = out[0]
+    assert z["name"] == "internalMesh"
+    assert z["role"] == "volume"
+    # Every count field is None — honest "TBD" placeholder for Tier 4.
+    assert z["n_cells"] is None
+    assert z["n_faces"] is None
+    assert z["n_points"] is None
+    assert z["bounding_box"] is None
 
 
 # ─── Fluent role inference by name suffix ─────────────────────────────────────
@@ -106,6 +118,43 @@ def test_fluent_classify_unknown_zone_type():
 
 
 # ─── Cross-solver schema invariants ───────────────────────────────────────────
+
+
+def test_fluent_boundaries_projection_picks_only_boundary_role():
+    """`boundaries` is a flat OF-style list projected from mesh_zones — only
+    rows with role=='boundary' show up; volume / interface / unknown drop."""
+    mesh_zones = [
+        {"name": "fluid:fluid", "role": "volume", "n_cells": 1000, "n_faces": None,
+         "patch_type": "fluid"},
+        {"name": "wall-1:wall", "role": "boundary", "n_cells": None, "n_faces": 80,
+         "patch_type": "wall"},
+        {"name": "inlet:velocity-inlet", "role": "boundary", "n_cells": None,
+         "n_faces": 12, "patch_type": "velocity-inlet"},
+        {"name": "interior-6:interior", "role": "interface", "n_cells": None,
+         "n_faces": 500, "patch_type": "interior"},
+        {"name": "default:default", "role": "unknown", "n_cells": 1000, "n_faces": None,
+         "patch_type": "default"},
+    ]
+    bnd = _project_boundaries_from_mesh_zones(mesh_zones)
+    assert [b["name"] for b in bnd] == ["wall-1:wall", "inlet:velocity-inlet"]
+    assert bnd[0] == {"name": "wall-1:wall", "type": "wall", "nFaces": 80}
+    assert bnd[1] == {"name": "inlet:velocity-inlet",
+                      "type": "velocity-inlet", "nFaces": 12}
+
+
+def test_fluent_boundaries_projection_handles_empty_or_missing():
+    assert _project_boundaries_from_mesh_zones([]) == []
+    assert _project_boundaries_from_mesh_zones(None) == []
+
+
+def test_fluent_boundaries_projection_matches_openfoam_keys():
+    """The projected boundary entries use the SAME keys as OpenFOAM's
+    polyMesh/boundary list — `name` / `type` / `nFaces`. Cross-solver
+    consumers can treat them uniformly."""
+    mesh_zones = [{"name": "wall:wall", "role": "boundary",
+                   "n_faces": 50, "patch_type": "wall"}]
+    bnd = _project_boundaries_from_mesh_zones(mesh_zones)
+    assert set(bnd[0].keys()) == {"name", "type", "nFaces"}
 
 
 def test_openfoam_skeleton_schema_matches_fluent_keys():

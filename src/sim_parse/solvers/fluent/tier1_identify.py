@@ -107,10 +107,15 @@ def _build_identity(cas_path: Path, case_root_kind: str, case_root: Path) -> dic
     set_field(out, "case_root_kind", case_root_kind,
               FieldProvenance("A", "input was directory or file"))
 
-    # Solver classification: density-based vs pressure-based, steady vs transient,
-    # would need reader access — defer to Tier 3
-    set_field(out, "solver", "fluent",
-              FieldProvenance("A", "fluent (sub-classification deferred to Tier 3)"))
+    # Solver classification (density-based vs pressure-based, steady vs
+    # transient) needs reader access — leave None at Tier 1 rather than
+    # echo back the format name as a placeholder. `format` already carries
+    # the platform identity ("fluent"); `solver` is the per-case scheme
+    # name (analogous to OpenFOAM's "reactingFoam") and we don't have
+    # enough info to fill it here. Tier 3 may upgrade this once h5py /
+    # binary section parsing lands.
+    set_field(out, "solver", None,
+              FieldProvenance("A", "Tier 1 has no reliable scheme classifier; deferred to Tier 3"))
 
     return out
 

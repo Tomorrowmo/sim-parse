@@ -208,6 +208,9 @@ def _build_identity(path: Path, *, sub_format: str, version: str | None,
               FieldProvenance("A", "directory containing the .cgns"))
     set_field(out, "case_root_kind", case_root_kind,
               FieldProvenance("A", "input was directory or file"))
-    set_field(out, "solver", "cgns",
-              FieldProvenance("A", "no upstream solver named in file"))
+    # CGNS is a data exchange format, not a solver — the originating
+    # solver name is not carried in the file. Leave None instead of
+    # echoing the format. (`format` already says "cgns".)
+    set_field(out, "solver", None,
+              FieldProvenance("A", "CGNS files do not name their producing solver"))
     return out

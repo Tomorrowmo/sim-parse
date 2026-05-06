@@ -28,42 +28,52 @@ _NOTE_FIELDS = re.compile(
 def read_owner_header_note(case_root: Path, region: str = "") -> dict | None:
     """Extract nPoints/nCells/nFaces/nInternalFaces from polyMesh/owner header.
 
+    Two extraction strategies, in order:
+      1. note "nPoints:... nCells:..." in FoamFile{} block (snappyHexMesh,
+         blockMesh-with-decomposeParDict, foamyHexMesh — they fill it in)
+      2. fallback: first integer after the FoamFile{} block — it's the
+         array length, which for `owner` IS nFaces. nCells/nPoints stay
+         unknown at Tier 3 and may be filled by Tier 4 via VTK.
+
     Args:
         case_root: case root directory.
         region: region name (empty for single-region).
 
     Returns:
         Dict with int values, e.g. {"nPoints": 7109, "nCells": 3466, ...}, or None.
+        Always returns at least {"nFaces": ...} when owner is readable.
     """
     if region:
         owner = case_root / "constant" / region / "polyMesh" / "owner"
     else:
         owner = case_root / "constant" / "polyMesh" / "owner"
-    if not owner.is_file():
-        # also try compressed
-        owner_gz = owner.with_suffix(owner.suffix + ".gz")
-        if owner_gz.is_file():
-            return _read_owner_note_from_gz(owner_gz)
+    head_text = _read_text_head(owner, n_bytes=4096)
+    if head_text is None:
         return None
-
-    # Read first ~512 bytes — the header is at the top
-    with open(owner, "rb") as f:
-        head = f.read(2048)
-    # Decode as latin-1 (header is ASCII, body is binary)
-    head_text = head.decode("latin-1", errors="replace")
-
-    return _parse_note_text(head_text)
+    return _parse_note_text(head_text) or _parse_array_length_fallback(
+        head_text, count_key="nFaces")
 
 
-def _read_owner_note_from_gz(path: Path) -> dict | None:
-    """For .gz compressed owner files."""
+def _read_text_head(path: Path, *, n_bytes: int) -> str | None:
+    """Read first n_bytes from path, with transparent .gz fallback. latin-1 decode.
+
+    Why latin-1: the header is ASCII but the file body may be binary; latin-1
+    is byte-preserving so we never raise on stray binary bytes.
+    """
     import gzip
     try:
-        with gzip.open(path, "rb") as f:
-            head = f.read(2048)
+        if path.is_file():
+            with open(path, "rb") as f:
+                head = f.read(n_bytes)
+        else:
+            gz = path.with_suffix(path.suffix + ".gz")
+            if not gz.is_file():
+                return None
+            with gzip.open(gz, "rb") as f:
+                head = f.read(n_bytes)
     except OSError:
         return None
-    return _parse_note_text(head.decode("latin-1", errors="replace"))
+    return head.decode("latin-1", errors="replace")
 
 
 def _parse_note_text(head_text: str) -> dict | None:
@@ -81,6 +91,47 @@ def _parse_note_text(head_text: str) -> dict | None:
     return found if found else None
 
 
+def _parse_array_length_fallback(head_text: str, *, count_key: str) -> dict | None:
+    """Find the first standalone integer after the FoamFile {...} block.
+
+    OpenFOAM stores list-typed data as
+        FoamFile {...}
+        // ...
+        <N>
+        (
+            v1 v2 v3 ...
+        )
+    so the first int after the closing brace is the list length. Caller
+    tells us whether that length means nFaces / nPoints / nCells based
+    on which file we're reading.
+    """
+    # Find end of FoamFile { ... } block (matched at top of file)
+    foam_start = head_text.find("FoamFile")
+    if foam_start == -1:
+        return None
+    brace_open = head_text.find("{", foam_start)
+    if brace_open == -1:
+        return None
+    depth = 1
+    i = brace_open + 1
+    while i < len(head_text) and depth > 0:
+        if head_text[i] == "{":
+            depth += 1
+        elif head_text[i] == "}":
+            depth -= 1
+        i += 1
+    if depth != 0:
+        return None
+    # i is now just past the closing brace; find first integer
+    m = re.search(r"^\s*(\d+)\s*$", head_text[i:], re.MULTILINE)
+    if not m:
+        return None
+    try:
+        return {count_key: int(m.group(1))}
+    except ValueError:
+        return None
+
+
 @never_raise(default=None)
 def read_boundary_patches(case_root: Path, region: str = "") -> list[dict] | None:
     """Parse polyMesh/boundary text dict; return list of patches.
@@ -91,10 +142,23 @@ def read_boundary_patches(case_root: Path, region: str = "") -> list[dict] | Non
         boundary = case_root / "constant" / region / "polyMesh" / "boundary"
     else:
         boundary = case_root / "constant" / "polyMesh" / "boundary"
-    if not boundary.is_file():
+
+    text: str | None = None
+    if boundary.is_file():
+        text = boundary.read_text(encoding="utf-8", errors="replace")
+    else:
+        # .gz fallback (mirror of read_owner_header_note)
+        boundary_gz = boundary.with_suffix(boundary.suffix + ".gz")
+        if boundary_gz.is_file():
+            import gzip
+            try:
+                with gzip.open(boundary_gz, "rb") as f:
+                    text = f.read().decode("utf-8", errors="replace")
+            except OSError:
+                return None
+    if text is None:
         return None
 
-    text = boundary.read_text(encoding="utf-8", errors="replace")
     text = _strip_comments(text)
 
     # The list looks like:

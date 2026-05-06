@@ -148,6 +148,16 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
                           "vtkFLUENTReader block walk: role classified by "
                           "name suffix (':fluid'/':wall'/':pressure-*'/...)"))
 
+            # Top-level `boundaries` mirror — same shape as OpenFOAM Tier 3
+            # so cross-solver consumers can ask "what patches are there?"
+            # without filtering mesh_zones themselves.
+            boundaries = _project_boundaries_from_mesh_zones(mesh_zones)
+            if boundaries:
+                set_field(out, "boundaries", boundaries,
+                          FieldProvenance("A",
+                              "projection of mesh_zones[role=boundary]; "
+                              "schema mirrors OpenFOAM polyMesh/boundary"))
+
     # transcript file → can extract solver type / iteration count
     if inventory and inventory.get("transcript_files"):
         trn_info = _scan_transcript(case_root, inventory["transcript_files"])
@@ -174,6 +184,25 @@ _FLUENT_BOUNDARY_ZONE_TYPES = {
     "porous-jump", "fan", "radiator",
     "interface", "periodic", "shadow",
 }
+
+
+def _project_boundaries_from_mesh_zones(mesh_zones: list[dict]) -> list[dict]:
+    """Project the boundary zones out of the unified mesh_zones list into a
+    flat list with the OpenFOAM-style polyMesh/boundary schema.
+
+    Cross-solver consumers (sim-knowledge rules, sim-post zone selection,
+    LLM tool prompts) can iterate `boundaries` uniformly without knowing
+    which solver produced it.
+    """
+    return [
+        {
+            "name": z.get("name"),
+            "type": z.get("patch_type") or "",
+            "nFaces": z.get("n_faces"),
+        }
+        for z in (mesh_zones or [])
+        if z.get("role") == "boundary"
+    ]
 
 
 def _classify_fluent_zone_by_name(name: str) -> tuple[str, str]:
