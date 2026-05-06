@@ -1,0 +1,26 @@
+{
+  "openfoam_DLR_combustion": {
+    "violations_per_tier": {
+      "tier_1_identify": "ok",
+      "tier_3_metadata": "ok"
+    }
+  },
+  "openfoam_airFoil_coldflow": {
+    "violations_per_tier": {
+      "tier_1_identify": "ok",
+      "tier_3_metadata": "ok"
+    }
+  },
+  "cgns_airfoil": {
+    "violations_per_tier": {
+      "tier_1_identify": "ok",
+      "tier_3_metadata": "ok"
+    }
+  },
+  "fluent_legacy_cas": {
+    "violations_per_tier": {
+      "tier_1_identify": "ok",
+      "tier_3_metadata": "ok"
+    }
+  }
+}
