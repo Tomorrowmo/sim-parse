@@ -165,7 +165,7 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
     # chemistry/combustion fields above AND mirror them into a structured
     # container alongside. Downstream consumers can switch to physics_setup
     # at their own pace; sim-knowledge YAML rules will migrate in a follow-up.
-    physics_setup = _build_physics_setup(out)
+    physics_setup = _build_physics_setup(out, case_root)
     set_field(out, "physics_setup", physics_setup,
               FieldProvenance("A",
                   "container of {turbulence, thermophysics, chemistry, "
@@ -189,64 +189,92 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 
-def _build_physics_setup(tier3_out: dict) -> dict:
+def _build_physics_setup(tier3_out: dict, case_root: Path) -> dict:
     """Build the cross-solver physics_setup container from already-extracted
-    OpenFOAM Tier 3 fields.
+    OpenFOAM Tier 3 fields, distinguishing 3 kinds of "missing":
 
-    Sentinel choice per component:
-      - if the legacy field exists in `out` → use it verbatim (extracted)
-      - chemistry/combustion absent → NotApplicable (cold-flow case is the
-        legitimate reason; a reacting case that lost extraction would be
-        rare and rerunning would surface as a parser bug, not a missing
-        field)
-      - turbulence/thermophysics absent → NotExtracted (these should be
-        present on every modern OF case; absence means our extractor
-        couldn't read the file)
-      - radiation/multiphase → NotApplicable for now (we don't extract
-        these yet; flagged here for future fill-in)
+      * extracted dict present in tier3_out → use it verbatim
+      * file present in constant/ but no extracted dict → NotExtracted
+        (parser debt: file is there, our extractor failed)
+      * file absent → NotApplicable (legitimately not part of this case)
+
+    The previous heuristic ("if not extracted → always NotApplicable") would
+    silently mask real extractor bugs on reacting cases. The file-presence
+    check (one stat() per slot, cheap) gives downstream consumers an honest
+    signal about whether a case is missing physics or our parser is.
 
     Returns a plain dict (not the pydantic model) so it serializes to JSON
     cleanly via the existing parse_case → MCP path.
     """
     from sim_parse.core.schema import NotApplicable, NotExtracted
 
-    def _slot(key: str, *, na_reason: str = "", ne_reason: str = "",
-              would_require: str = "") -> dict:
+    constant = case_root / "constant"
+
+    def _slot(key: str, *, file_name: str | None,
+              ne_reason_no_file: str = "") -> dict:
+        """Pick the right sentinel based on extraction success + file presence.
+
+        file_name=None means "we don't have a file-presence signal for this
+        component" — fall back to NotExtracted (universal fields like
+        turbulence, where absence is always a parser issue).
+        """
         existing = tier3_out.get(key)
         if existing:
             return existing
-        if na_reason:
-            return NotApplicable(reason=na_reason).model_dump()
-        return NotExtracted(reason=ne_reason,
-                            would_require=would_require or None).model_dump()
+        # No extracted dict; use file presence to decide.
+        if file_name is None:
+            return NotExtracted(
+                reason=ne_reason_no_file,
+                would_require=f"re-read constant/{key}Properties",
+            ).model_dump()
+        file_path = constant / file_name
+        if file_path.is_file():
+            # File exists but extractor produced nothing → real parser debt
+            return NotExtracted(
+                reason=(f"constant/{file_name} exists but extractor produced "
+                        f"no result — likely an OpenFOAM dialect we don't "
+                        f"handle yet"),
+                would_require=f"fix _read_{key} parser for {file_name}",
+            ).model_dump()
+        # File truly absent → not part of this case
+        return NotApplicable(
+            reason=f"constant/{file_name} not present in case directory"
+        ).model_dump()
+
+    # turbulenceProperties is universal in OF v2206+ (every case has one,
+    # even "laminar"). Absence = parser failure, no file gate.
+    turb = _slot(
+        "turbulence",
+        file_name=None,
+        ne_reason_no_file="constant/turbulenceProperties not parsed",
+    )
+
+    # File-gated: thermophysicalProperties is only present on compressible /
+    # reactive cases. Incompressible cases (simpleFoam, pisoFoam) use
+    # transportProperties instead — when thermophysicalProperties is truly
+    # absent, NotApplicable is the honest signal (caller can probe
+    # transportProperties separately if they want kinematic viscosity).
+    thermo = _slot("thermophysics", file_name="thermophysicalProperties")
+    chem = _slot("chemistry", file_name="chemistryProperties")
+    comb = _slot("combustion", file_name="combustionProperties")
+    rad = _slot("radiation", file_name="radiationProperties")
+
+    # Multiphase: no single canonical file. transportProperties exists in
+    # most OF cases (incl. single-phase). phaseProperties / phasesSystem
+    # are stronger signals but not universal. Until we have a robust check,
+    # leave NotApplicable with the explicit "not yet detected" reason.
+    multi = NotApplicable(
+        reason="multiphase detection not yet implemented for OpenFOAM "
+               "(would need phaseProperties / transportProperties phase parsing)"
+    ).model_dump()
 
     return {
-        "turbulence": _slot(
-            "turbulence",
-            ne_reason="constant/turbulenceProperties not parsed",
-            would_require="re-read constant/turbulenceProperties",
-        ),
-        "thermophysics": _slot(
-            "thermophysics",
-            ne_reason="constant/thermophysicalProperties not parsed",
-            would_require="re-read constant/thermophysicalProperties",
-        ),
-        "chemistry": _slot(
-            "chemistry",
-            na_reason=("non-reacting case detected — no chemistryProperties "
-                       "file present and chemistry block not extracted"),
-        ),
-        "combustion": _slot(
-            "combustion",
-            na_reason=("non-reacting case detected — no combustionProperties "
-                       "file present and combustion block not extracted"),
-        ),
-        "radiation": NotApplicable(
-            reason="radiation extraction not yet implemented for OpenFOAM"
-        ).model_dump(),
-        "multiphase": NotApplicable(
-            reason="multiphase extraction not yet implemented for OpenFOAM"
-        ).model_dump(),
+        "turbulence":    turb,
+        "thermophysics": thermo,
+        "chemistry":     chem,
+        "combustion":    comb,
+        "radiation":     rad,
+        "multiphase":    multi,
     }
 
 
