@@ -177,7 +177,16 @@ def parse_case(
         out["tier_6_full_data"] = _run_tier6_export(
             case_root, identity, default_path,
         )
-    if target_tier >= 7:
+    # Tier 7 (semantic interpretation) fires from target_tier >= 5, NOT 7.
+    # Reasoning: Tier 7 is a lightweight heuristic roll-up of Tiers 1-5
+    # (~ms). The original ladder ("tier N implies all of 1..N") forced
+    # Tier 7 to wait until target_tier=7, which dragged in Tier 6 VTU
+    # export (artifact-producing, secs-to-min). In practice the only way
+    # to get candidate_domains / nl_summary / run_health was to pay for
+    # the heavy export. Decouple: Tier 6 stays opt-in; Tier 7 runs
+    # alongside QOI evaluation. Purely additive — callers asking for
+    # target_tier=7 still get the same result as before.
+    if target_tier >= 5:
         out["tier_7_semantic"] = _run_tier7_semantic(out, default_path)
 
     # Promote each tier's _warnings to the top-level warnings[] list, prefixed

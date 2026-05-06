@@ -82,3 +82,30 @@ def test_tier3_detects_steady_state(airfoil2d_coldflow):
     t3 = r["tier_3_metadata"]
     assert t3.get("is_transient") is False, \
         "simpleFoam case with steadyState ddt scheme should be is_transient=False"
+
+
+# ─── Tier 7 fires alongside Tier 5 (decoupled from heavy Tier 6 export) ───────
+
+
+def test_tier5_fires_tier7_without_tier6_artifact(airfoil2d_coldflow):
+    """Regression: target_tier=5 must include tier_7_semantic so MCP tools
+    (which standardize on tier=5 for cache sharing) get candidate_domains
+    and other interpretive fields. tier_6_full_data must stay opt-in
+    because it produces VTU artifacts (heavy I/O, secs-to-min).
+
+    The MCP-side bug this protects against: before the cascade fix,
+    simparse_case / simparse_summary returned no candidate_domains because
+    Tier 7 was gated at target_tier >= 7, forcing callers to also pay for
+    Tier 6 VTU export just to get a heuristic interpretation.
+    """
+    r = parse_case(airfoil2d_coldflow, target_tier=5)
+    assert "tier_7_semantic" in r, \
+        "target_tier=5 must produce tier_7_semantic (interpretive layer)"
+    assert "tier_6_full_data" not in r, \
+        "target_tier=5 must NOT produce tier_6_full_data (artifact opt-in)"
+    cd = r["tier_7_semantic"].get("candidate_domains")
+    assert cd is not None, "candidate_domains must be present in tier_7_semantic"
+    # airFoil2D is pure aero (p+U, no T, no species) → fluid_dynamics only
+    domains = [e["domain"] for e in cd.get("value", [])]
+    assert "fluid_dynamics" in domains
+    assert "combustion" not in domains
