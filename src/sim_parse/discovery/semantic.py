@@ -2,7 +2,7 @@
 
 Phase 1: HEURISTIC engine (rule-based, deterministic). Reads tier 1-5 outputs
 and produces semantic-layer fields (physics_class / nl_summary / time_semantics /
-run_health / complexity_class) WITHOUT calling an LLM.
+run_health / complexity_class / candidate_domains) WITHOUT calling an LLM.
 
 Phase 3+: optional LLM upgrade — interpret() will detect a registered LLM
 client and use RAG against sim-knowledge/physics; falls back to heuristic when
@@ -13,9 +13,18 @@ shape is given, in line with design.md §11 mechanism #1 "结构化知识库" id
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from sim_parse.core.errors import never_raise
+
+
+# Sibling sim-knowledge repo path (same trick as qoi_engine.py uses).
+_SIM_KNOWLEDGE = Path(__file__).resolve().parents[3].parent / "sim-knowledge"
+_DOMAIN_INFERENCE_YAML = _SIM_KNOWLEDGE / "physics" / "domain_inference.yaml"
+
+# Cached after first read; cleared on process restart.
+_CLUES_CACHE: list[dict] | None = None
 
 
 @never_raise(default={})
@@ -33,9 +42,164 @@ def interpret(parse_result: dict) -> dict:
     _add_time_semantics(out, parse_result)
     _add_run_health(out, parse_result)
     _add_complexity_class(out, parse_result)
+    _add_candidate_domains(out, parse_result)
     _add_nl_summary(out, parse_result)
 
     return out
+
+
+# ─── candidate_domains: routing via sim-knowledge YAML clue table ─────────────
+
+
+@never_raise(default=[])
+def _load_domain_inference_clues() -> list[dict]:
+    """Read sim-knowledge/physics/domain_inference.yaml. Cached.
+
+    Silent-fail on missing sibling repo or yaml — returns []. Zero-config
+    consumers of sim-parse (no sim-knowledge installed) get an empty
+    candidate_domains list, not an error.
+    """
+    global _CLUES_CACHE
+    if _CLUES_CACHE is not None:
+        return _CLUES_CACHE
+    if not _DOMAIN_INFERENCE_YAML.is_file():
+        _CLUES_CACHE = []
+        return _CLUES_CACHE
+    try:
+        import yaml
+    except ImportError:
+        _CLUES_CACHE = []
+        return _CLUES_CACHE
+    try:
+        with open(_DOMAIN_INFERENCE_YAML, encoding="utf-8") as f:
+            doc = yaml.safe_load(f) or {}
+        _CLUES_CACHE = list(doc.get("clues") or [])
+    except Exception:
+        _CLUES_CACHE = []
+    return _CLUES_CACHE
+
+
+def _add_candidate_domains(out: dict, r: dict) -> None:
+    """Apply sim-knowledge clue table; emit ranked domain candidates.
+
+    Output shape:
+        candidate_domains: {
+            value: [
+                {"domain": "combustion", "score": 6,
+                 "matched_clues": ["combustion-by-species", "combustion-by-application"]},
+                {"domain": "fluid_dynamics", "score": 3, "matched_clues": [...]},
+                ...
+            ],
+            confidence: HIGH/MED/LOW,
+            source: "sim-knowledge/physics/domain_inference.yaml (N clues)",
+        }
+    """
+    clues = _load_domain_inference_clues()
+    if not clues:
+        _set(out, "candidate_domains", {
+            "value": [],
+            "confidence": "LOW",
+            "source": "sim-knowledge/physics/domain_inference.yaml not found",
+        })
+        return
+
+    t1 = r.get("tier_1_identify", {}) or {}
+    t2 = r.get("tier_2_inventory", {}) or {}
+    t3 = r.get("tier_3_metadata", {}) or {}
+
+    # Combine variable lists across tiers (different solvers fill different tiers).
+    fields = set()
+    for src in (t2.get("variables"), t3.get("variables")):
+        for name in (src or []):
+            if isinstance(name, str):
+                fields.add(name)
+    fields_lower = {f.lower() for f in fields}
+
+    application = (t3.get("application") or t1.get("solver") or "").lower()
+
+    # Boundary patch types (used by if_patch_type clues, none today)
+    patch_types_lower = set()
+    for b in (t3.get("boundaries") or []):
+        if isinstance(b, dict):
+            t = (b.get("type") or "").lower()
+            if t:
+                patch_types_lower.add(t)
+
+    _CONFIDENCE_WEIGHT = {"strong": 3, "moderate": 2, "weak": 1}
+
+    by_domain: dict[str, dict] = {}
+
+    for clue in clues:
+        if not isinstance(clue, dict):
+            continue
+        if not _clue_matches(clue, fields_lower, application, patch_types_lower):
+            continue
+        domain = clue.get("domain")
+        if not domain:
+            continue
+        weight = _CONFIDENCE_WEIGHT.get(
+            (clue.get("confidence") or "").lower(), 1)
+        entry = by_domain.setdefault(domain, {
+            "domain": domain, "score": 0, "matched_clues": [],
+        })
+        entry["score"] += weight
+        entry["matched_clues"].append(clue.get("id") or "?")
+
+    ranked = sorted(by_domain.values(), key=lambda e: -e["score"])
+
+    if not ranked:
+        confidence = "LOW"
+    elif ranked[0]["score"] >= 5:
+        confidence = "HIGH"
+    else:
+        confidence = "MED"
+
+    _set(out, "candidate_domains", {
+        "value": ranked,
+        "confidence": confidence,
+        "source": f"sim-knowledge/physics/domain_inference.yaml ({len(clues)} clues)",
+    })
+
+
+def _clue_matches(clue: dict, fields_lower: set[str],
+                  application: str, patch_types_lower: set[str]) -> bool:
+    """Evaluate one clue against the case signals. ALL specified conditions
+    must match; missing conditions are treated as 'always satisfied'."""
+    # if_any_field: any one of the listed names must be present
+    any_fields = clue.get("if_any_field")
+    if any_fields:
+        wanted = {str(f).lower() for f in any_fields}
+        if not (wanted & fields_lower):
+            return False
+
+    # if_all_fields: every listed name must be present
+    all_fields = clue.get("if_all_fields")
+    if all_fields:
+        wanted = {str(f).lower() for f in all_fields}
+        if not wanted.issubset(fields_lower):
+            return False
+
+    # if_no_fields: NONE of the listed names may be present (negative gate)
+    no_fields = clue.get("if_no_fields")
+    if no_fields:
+        forbidden = {str(f).lower() for f in no_fields}
+        if forbidden & fields_lower:
+            return False
+
+    # if_application_substring: app name must contain at least one
+    app_subs = clue.get("if_application_substring")
+    if app_subs:
+        if not any(str(s).lower() in application for s in app_subs):
+            return False
+
+    # if_patch_type: at least one boundary patch must have one of these types
+    patch_types = clue.get("if_patch_type")
+    if patch_types:
+        wanted = {str(t).lower() for t in patch_types}
+        if not (wanted & patch_types_lower):
+            return False
+
+    return True
 
 
 # ─── Heuristic engines ───────────────────────────────────────────────────────
