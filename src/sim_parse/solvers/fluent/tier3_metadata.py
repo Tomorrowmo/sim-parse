@@ -225,24 +225,43 @@ def _project_boundaries_from_mesh_zones(mesh_zones: list[dict]) -> list[dict]:
 
 
 def _classify_fluent_zone_by_name(name: str) -> tuple[str, str]:
-    """Parse a Fluent block name like 'tria-3-wall:wall' → (role, zone_type).
+    """Parse a Fluent block name → (role, zone_type).
+
+    Two naming conventions seen in the wild:
+      A) <name>:<type>  e.g. 'tria-3-wall:wall'           (type is suffix)
+      B) <type>:<name>  e.g. 'wall:tria-3-wall'           (type is prefix)
+                              'fluid:tets'
+                              'pressure-far-field:tria-2-outlet'
+
+    Try both ends of the colon; whichever matches a known Fluent zone
+    type wins. Both conventions appear depending on Fluent version /
+    how the case was set up — vtkFLUENTReader doesn't normalize the order.
 
     Returns:
         (role, zone_type) where role ∈ {volume, boundary, interface, unknown}.
-        zone_type is the raw Fluent type tag (the part after ':') or '' if
-        no ':' separator was found.
+        zone_type is the canonical Fluent type tag, or the raw token if
+        nothing matched (so callers still see what we tried).
     """
     if ":" not in name:
         return "unknown", ""
-    _, _, zone_type = name.rpartition(":")
-    zone_type = zone_type.strip().lower()
-    if zone_type in _FLUENT_VOLUME_ZONE_TYPES:
-        return "volume", zone_type
-    if zone_type in _FLUENT_INTERIOR_ZONE_TYPES:
-        return "interface", zone_type
-    if zone_type in _FLUENT_BOUNDARY_ZONE_TYPES:
-        return "boundary", zone_type
-    return "unknown", zone_type
+
+    # Both candidates: prefix (before first :) and suffix (after last :).
+    # Convention B is the "wall:tria-3-wall" pattern; convention A is the
+    # legacy "tria-3-wall:wall" pattern.
+    prefix = name.partition(":")[0].strip().lower()
+    suffix = name.rpartition(":")[2].strip().lower()
+
+    for candidate in (prefix, suffix):  # prefer prefix (convention B)
+        if candidate in _FLUENT_VOLUME_ZONE_TYPES:
+            return "volume", candidate
+        if candidate in _FLUENT_INTERIOR_ZONE_TYPES:
+            return "interface", candidate
+        if candidate in _FLUENT_BOUNDARY_ZONE_TYPES:
+            return "boundary", candidate
+
+    # Nothing matched — return the suffix (legacy convention A) as the
+    # raw type tag so callers can still see what was there.
+    return "unknown", suffix
 
 
 def _build_fluent_mesh_zone(block, path: tuple, block_index: int,

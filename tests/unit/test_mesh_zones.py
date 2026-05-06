@@ -117,6 +117,34 @@ def test_fluent_classify_unknown_zone_type():
     assert t == "something-weird-fluent-added"
 
 
+# Real Fluent cases use BOTH naming conventions depending on version /
+# how the case was set up. The classifier must accept both.
+
+def test_fluent_classify_type_as_prefix_convention():
+    """Convention B: type:name (e.g. 'fluid:tets', 'wall:tria-3-wall').
+    Found in Fluent 2026R1+ TUI-generated cases.
+    """
+    assert _classify_fluent_zone_by_name("fluid:tets") == ("volume", "fluid")
+    role, t = _classify_fluent_zone_by_name("wall:tria-3-wall")
+    assert role == "boundary"
+    assert t == "wall"
+    role, t = _classify_fluent_zone_by_name("pressure-far-field:tria-2-outlet")
+    assert role == "boundary"
+    assert t == "pressure-far-field"
+    role, t = _classify_fluent_zone_by_name("interior:default_interior-6")
+    assert role == "interface"
+    assert t == "interior"
+
+
+def test_fluent_classify_type_as_suffix_convention():
+    """Convention A: name:type (e.g. 'tria-3-wall:wall'). Older convention,
+    still used in some workflows."""
+    role, t = _classify_fluent_zone_by_name("tria-3-wall:wall")
+    assert role == "boundary"
+    assert t == "wall"
+    assert _classify_fluent_zone_by_name("solid_block:solid") == ("volume", "solid")
+
+
 # ─── Cross-solver schema invariants ───────────────────────────────────────────
 
 
