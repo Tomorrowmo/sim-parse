@@ -169,8 +169,8 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
     # Fluent's physics setup (turbulence/material/reactions/...) lives in the
     # `models` section of the .cas binary. vtkFLUENTReader doesn't expose
     # this; we'd need an h5py path for .cas.h5 (CFF) or a dedicated section
-    # parser for legacy. Mark every component NotExtracted with the reason
-    # so consumers know it's parser debt, not a missing case feature.
+    # parser for legacy. Mark every component NotExtracted as the BASELINE,
+    # then upgrade slots that .jou parsing fills in below.
     from sim_parse.core.schema import physics_setup_unextractable
     sub_format = identity.get("sub_format", "legacy")
     if sub_format == "cff":
@@ -179,10 +179,54 @@ def metadata(case_root: Path, identity: dict, inventory: dict) -> dict | None:
     else:
         ne_reason = "Fluent legacy .cas binary section 39 (models) not parsed"
         ne_would = "binary .cas section parser (Section 39 / 41 / 45)"
-    set_field(out, "physics_setup",
-              physics_setup_unextractable(ne_reason, ne_would).model_dump(),
+    physics_setup = physics_setup_unextractable(ne_reason, ne_would).model_dump()
+
+    # ─── .jou journal parsing — TUI commands → BC / viscous / lineage ────────
+    # vtkFLUENTReader can't reach setup info in the binary .cas. The
+    # TUI journal (.jou) is text-readable and frequently carries:
+    #   - viscous model selection         → upgrades physics_setup.turbulence
+    #   - boundary condition values       → top-level `bc` field (cross-solver)
+    #   - case lineage (read/write order) → top-level `case_lineage`
+    #   - target iteration count          → top-level `solve_settings`
+    #   - exported field selections       → top-level `journal_exports`
+    # When a slot is filled by .jou, it OVERRIDES the NotExtracted baseline
+    # — partial extraction is better than blanket "couldn't extract".
+    if inventory and inventory.get("journal_files"):
+        from sim_parse.solvers.fluent._journal_parser import parse_fluent_journals
+        case_dir = Path(cas_path).parent
+        jou_data = parse_fluent_journals(case_dir, inventory["journal_files"])
+        if jou_data:
+            # Upgrade physics_setup.turbulence if .jou specified a viscous model
+            vis = jou_data.get("viscous_model")
+            if vis:
+                physics_setup["turbulence"] = {
+                    "source": "fluent_journal",
+                    **vis,
+                }
+
+            # Top-level BC field — list per-zone-per-param values
+            bc_list = jou_data.get("boundary_conditions")
+            if bc_list:
+                set_field(out, "bc", bc_list,
+                          FieldProvenance("A",
+                              "Fluent TUI journal /define/boundary-conditions/set/* commands"))
+
+            # Solve target / case lineage / exports — surface as-is
+            if jou_data.get("solve_settings"):
+                set_field(out, "solve_settings", jou_data["solve_settings"],
+                          FieldProvenance("A", "Fluent TUI journal /solve iterate"))
+            if jou_data.get("case_lineage"):
+                set_field(out, "case_lineage", jou_data["case_lineage"],
+                          FieldProvenance("A",
+                              "Fluent TUI journal /file/read + /file/write* sequence"))
+            if jou_data.get("exports"):
+                set_field(out, "journal_exports", jou_data["exports"],
+                          FieldProvenance("A", "Fluent TUI journal /file/export"))
+
+    set_field(out, "physics_setup", physics_setup,
               FieldProvenance("A",
-                  "all components NotExtracted; Fluent-specific reason carried inside"))
+                  "physics_setup: NotExtracted baseline; turbulence may be "
+                  "upgraded by .jou viscous_model"))
 
     return out
 
